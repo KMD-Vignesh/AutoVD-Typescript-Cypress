@@ -1,136 +1,228 @@
-# AutoVD - Cypress + TypeScript Test Framework
+<div align="center">
 
-[![E2E](https://github.com/KMD-Vignesh/AutoVD-Typescript-Cypress/actions/workflows/e2e.yml/badge.svg)](https://github.com/KMD-Vignesh/AutoVD-Typescript-Cypress/actions/workflows/e2e.yml)
-[![Cypress](https://img.shields.io/badge/Cypress-16-17202C?logo=cypress)](https://www.cypress.io/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+<h1>AutoVD-Typescript-Cypress</h1>
 
-A modular Cypress + TypeScript framework with page objects, shared login, tagged smoke tests, HTML reporting, strict linting and CI. The included reference suite runs against [SauceDemo](https://www.saucedemo.com).
+<p><strong>End-to-end web test framework for Cypress + TypeScript</strong><br>
+Cypress · TypeScript · Page Objects · Custom Commands · Mochawesome</p>
 
-## Stack
+<p>
+  <a href="https://github.com/KMD-Vignesh/AutoVD-Typescript-Cypress"><img src="https://img.shields.io/badge/Node-22-5FA04E?style=for-the-badge&logo=nodedotjs&logoColor=white" alt="Node 22"></a>
+  <a href="https://github.com/KMD-Vignesh/AutoVD-Typescript-Cypress"><img src="https://img.shields.io/badge/Cypress-16.2-69D3A7?style=for-the-badge&logo=cypress&logoColor=white" alt="Cypress 16.2"></a>
+  <a href="https://github.com/KMD-Vignesh/AutoVD-Typescript-Cypress"><img src="https://img.shields.io/badge/TypeScript-5.9-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript 5.9"></a>
+  <a href="https://github.com/KMD-Vignesh/AutoVD-Typescript-Cypress/actions/workflows/e2e.yml"><img src="https://github.com/KMD-Vignesh/AutoVD-Typescript-Cypress/actions/workflows/e2e.yml/badge.svg" alt="E2E"></a>
+  <a href="https://github.com/KMD-Vignesh/AutoVD-Typescript-Cypress/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-2EA44F?style=for-the-badge" alt="MIT License"></a>
+</p>
 
-| Concern | Tool |
-|---|---|
-| Test runner | Cypress 16 |
-| Language | TypeScript 5.9 (strict) |
-| Structure | Page Object Model |
-| Test selection | `@cypress/grep` tags |
-| Reporting | `cypress-mochawesome-reporter` |
-| Linting | ESLint 10 flat config + `eslint-plugin-cypress` |
-| Formatting | Prettier |
-| CI | GitHub Actions |
+</div>
 
-## Requirements
+<div align="center">
 
-- Node.js 22 (see `.nvmrc`)
-- npm 10+
+<h3>Vignesh D</h3>
+
+<p><strong>Senior Software Quality Analyst</strong><br>Chennai, India</p>
+
+<p>
+  <a href="https://www.linkedin.com/in/kmd-vignesh/"><img src="https://img.shields.io/badge/LinkedIn-Vignesh%20D-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white" alt="LinkedIn"></a>
+  <a href="https://github.com/KMD-Vignesh"><img src="https://img.shields.io/badge/GitHub-KMD--Vignesh-181717?style=for-the-badge&logo=github&logoColor=white" alt="GitHub"></a>
+</p>
+
+<p>
+  <a href="mailto:KMD.Vignesh@outlook.com">KMD.Vignesh@outlook.com</a>
+  &nbsp;·&nbsp;
+  <a href="mailto:VigneshDhakshnamoorthy@gmail.com">VigneshDhakshnamoorthy@gmail.com</a>
+</p>
+
+</div>
+
+## What It Is
+
+A Cypress + TypeScript E2E suite with page objects, typed fixtures, tag filtering, and a CI pipeline that runs on every push. Specs stay short because navigation and selectors live in page objects and custom commands.
+
+- **21 scenarios across 3 specs** — login, products, and checkout on SauceDemo.
+- **Page objects with typed selectors** — one class per screen; specs describe behaviour only.
+- **Tagged runs** — `@smoke` and other tags filter specs through `@cypress/grep`.
+- **Reports and artifacts** — Mochawesome HTML plus video and failure screenshots, uploaded by CI.
+
+## Framework Family
+
+Seven implementations of the same layered idea. Pick the stack your team already uses; the concepts and reports stay familiar.
+
+| Framework                       | Stack                         | Covers    | Repository                                                                                  |
+| :------------------------------ | :---------------------------- | :-------- | :------------------------------------------------------------------------------------------ |
+| **Java + Selenium**             | Java 17 · Selenium 4 · TestNG | UI + REST | [AutoVD-Java-Selenium](https://github.com/KMD-Vignesh/AutoVD-Java-Selenium)                 |
+| **Java + Playwright**           | Java 17 · Playwright · TestNG | UI + REST | [AutoVD-Java-Playwright](https://github.com/KMD-Vignesh/AutoVD-Java-Playwright)             |
+| **C# + Playwright**             | C# · Playwright · NUnit       | UI        | [AutoVD-CS-Playwright](https://github.com/KMD-Vignesh/AutoVD-CS-Playwright)                 |
+| **Python + Selenium**           | Python · Selenium · pytest    | UI + REST | [AutoVD-Python-Selenium](https://github.com/KMD-Vignesh/AutoVD-Python-Selenium)             |
+| **Python + Playwright**         | Python · Playwright · pytest  | UI        | [AutoVD-Python-Playwright](https://github.com/KMD-Vignesh/AutoVD-Python-Playwright)         |
+| **TypeScript + Playwright**     | TypeScript · Playwright       | UI + REST | [AutoVD-Typescript-Playwright](https://github.com/KMD-Vignesh/AutoVD-Typescript-Playwright) |
+| **TypeScript + Cypress** — this repo | TypeScript · Cypress     | UI (E2E)  | [AutoVD-Typescript-Cypress](https://github.com/KMD-Vignesh/AutoVD-Typescript-Cypress)       |
+
+## Quick Start
+
+**Prerequisites:** Node.js 22 (see `.nvmrc`) and npm.
 
 ```bash
-nvm use
+git clone https://github.com/KMD-Vignesh/AutoVD-Typescript-Cypress.git
+cd AutoVD-Typescript-Cypress
 npm ci
+npm test
 ```
 
-## Quick start
+The default run is headless against `https://www.saucedemo.com`. To watch it, use `npm run test:open`.
+
+Open the report:
 
 ```bash
-npm run test:open      # interactive runner
-npm test               # headless, all specs
-npm run test:smoke     # only @smoke-tagged tests
-npm run verify         # type-check + lint + format check
+open reports/index.html
 ```
 
-## Scripts
-
-| Script | Purpose |
-|---|---|
-| `npm test` | Run all specs headlessly |
-| `npm run test:smoke` | Run tests tagged `@smoke` |
-| `npm run test:open` | Open the Cypress runner |
-| `npm run test:headed` | Run with a visible browser |
-| `npm run type-check` | `tsc --noEmit` |
-| `npm run lint` | ESLint over specs, support and config |
-| `npm run lint:fix` | ESLint with autofix |
-| `npm run format` | Prettier for code and config |
-| `npm run format:check` | Prettier check (used in CI) |
-| `npm run verify` | Type-check, lint and format check in one command |
-
-## Project structure
-
-```
-.
-├── .github/workflows/e2e.yml     # CI: verify, run Cypress, upload artifacts
-├── cypress/
-│  ├── e2e/saucedemo/             # Specs grouped by feature area
-│  ├── fixtures/saucedemo/        # Test data per module
-│  ├── page-objects/
-│  │  ├── base/BasePage.ts        # Shared navigation
-│  │  └── saucedemo/              # One class per page
-│  └── support/
-│     ├── commands.ts             # Shared login command
-│     ├── e2e.ts                  # Reporter and grep registration
-│     └── types.d.ts              # Custom command types
-├── docs/                         # Detailed guides
-├── cypress.config.ts             # Cypress, reporter and grep config
-├── eslint.config.mjs             # ESLint flat config
-├── tsconfig.json                 # Strict TypeScript config
-└── package.json
-```
-
-Generated output (`reports/`, `cypress/videos/`, `cypress/screenshots/`) is gitignored.
-
-## How the suite is organized
-
-- **Specs** (`cypress/e2e/<module>/`) contain scenarios and assertions only.
-- **Page objects** (`cypress/page-objects/<module>/`) own selectors and page interactions.
-- **Fixtures** (`cypress/fixtures/<module>/`) hold static data such as users and checkout details.
-- **Shared login** is a custom command: `cy.login(users.validUser)`.
-- **Smoke tests** are tagged in the spec: `it('...', { tags: '@smoke' }, () => {})`.
-
-To add a module: create its fixture, page object and spec under the same module name. Tag the critical path `@smoke`.
+On Linux use `xdg-open`; on Windows open the file from Explorer.
 
 ## Configuration
 
-`cypress.config.ts` reads the target URL from `CYPRESS_BASE_URL` and falls back to `https://www.saucedemo.com`:
+`cypress.config.ts` holds the suite configuration:
+
+| Setting | Default | What it does |
+| :--- | :--- | :--- |
+| `baseUrl` | `CYPRESS_BASE_URL` or SauceDemo | Target application |
+| `specPattern` | `cypress/e2e/**/*.cy.ts` | Spec discovery |
+| `defaultCommandTimeout` | `10000` | Per-command timeout in milliseconds |
+| `pageLoadTimeout` | `60000` | Page-load timeout |
+| `retries.runMode` | `1` | One retry for failed tests in CI |
+| `video` | `true` | Record every spec |
+| `screenshotOnRunFailure` | `true` | Capture failure screenshots |
+| `reporter` | `cypress-mochawesome-reporter` | HTML report in `reports/` |
+
+Point the suite at another environment with an environment variable:
 
 ```bash
 CYPRESS_BASE_URL=https://staging.example.com npm test
 ```
 
-Tag filtering and spec pre-filtering are configured under `expose`:
+Tag filtering uses `@cypress/grep` through the `expose` block; `npm run test:smoke` runs only `@smoke` tests.
 
-```ts
-expose: {
-  grepFilterSpecs: true,
-  grepOmitFiltered: true,
+## Writing Tests
+
+A spec uses a page object and a typed fixture:
+
+```typescript
+import { LoginPage } from '../../page-objects/saucedemo/LoginPage';
+import * as users from '../../fixtures/saucedemo/users.json';
+
+describe('SauceDemo - Login', () => {
+  it('logs in with standard_user', () => {
+    new LoginPage().visit().login(users.validUser);
+    cy.url().should('include', '/inventory.html');
+  });
+
+  it('shows an error for invalid credentials', () => {
+    new LoginPage().visit().login(users.invalidUser);
+    cy.get('[data-test="error"]').should('be.visible');
+  });
+});
+```
+
+A page object extends `BasePage` and returns `this`, so calls chain:
+
+```typescript
+export class LoginPage extends BasePage {
+  private readonly selectors = {
+    usernameInput: '[data-test="username"]',
+    passwordInput: '[data-test="password"]',
+    loginButton: '[data-test="login-button"]',
+  };
+
+  visit() {
+    cy.visit('/');
+    return this;
+  }
+
+  login(credentials: { username: string; password: string }) {
+    cy.get(this.selectors.usernameInput).type(credentials.username);
+    cy.get(this.selectors.passwordInput).type(credentials.password);
+    cy.get(this.selectors.loginButton).click();
+    return this;
+  }
 }
 ```
 
-More detail: [06 - Configuration](docs/06-configuration.md).
+## Framework Map
 
-## Reports and artifacts
+Read these in order. Everything else supports them.
 
-Every run writes an HTML report plus JSON, videos and failure screenshots:
+| Path | What it does |
+| :--- | :--- |
+| `cypress/e2e/saucedemo/` | Specs: `login`, `products`, `checkout`. **Start here.** |
+| `cypress/page-objects/base/BasePage.ts` | Shared navigation |
+| `cypress/page-objects/saucedemo/` | One class per screen |
+| `cypress/support/commands.ts` | Typed custom commands (`cy.login`) |
+| `cypress/fixtures/saucedemo/` | Users and checkout data |
+| `cypress.config.ts` | Target URL, timeouts, retries, reporter |
+| `docs/` | Nine focused guides, from setup to CI |
 
-![HTML report](docs/assets/report.png)
+## How a Run Works
 
-| Artifact | Location |
-|---|---|
+1. Cypress loads `cypress.config.ts` and the support file.
+2. `@cypress/grep` filters specs when a tag is supplied.
+3. Each spec builds a page object; selectors stay in the page, assertions in the spec.
+4. Mochawesome writes HTML and JSON to `reports/`; video and screenshots land under `cypress/`.
+5. CI (`.github/workflows/e2e.yml`) runs `npm ci`, `npm run verify`, then Cypress, and uploads all artifacts.
+
+## Project Layout
+
+```text
+AutoVD-Typescript-Cypress/
+├── cypress/
+│   ├── e2e/saucedemo/        # specs
+│   ├── page-objects/         # BasePage + screen classes
+│   ├── support/              # custom commands and types
+│   ├── fixtures/saucedemo/   # test data
+│   ├── screenshots/          # generated on failure
+│   └── videos/               # generated recordings
+├── docs/                     # nine guides
+├── reports/                  # generated: Mochawesome HTML + JSON
+├── cypress.config.ts
+└── package.json
+```
+
+`screenshots/`, `videos/`, and `reports/` are generated artifacts.
+
+## Reports
+
+| Output | Location |
+| :--- | :--- |
 | HTML report | `reports/index.html` |
 | JSON results | `reports/.jsons/` |
 | Videos | `cypress/videos/` |
 | Failure screenshots | `cypress/screenshots/` |
 
-CI uploads these as the `cypress-artifacts` artifact. See [09 - Reporting](docs/09-reporting.md).
+CI uploads all four as the `cypress-artifacts` artifact.
 
 ## Documentation
 
-| Doc | Description |
-|---|---|
-| [01-installation](docs/01-installation.md) | Setup and verification |
-| [02-project-structure](docs/02-project-structure.md) | Folder architecture and module rules |
-| [03-best-practices](docs/03-best-practices.md) | Cypress and TypeScript practices |
-| [04-page-object-model](docs/04-page-object-model.md) | Page object conventions |
-| [05-custom-commands](docs/05-custom-commands.md) | Shared login and command patterns |
-| [06-configuration](docs/06-configuration.md) | Cypress, TypeScript, ESLint and env config |
-| [07-fixtures-test-data](docs/07-fixtures-test-data.md) | Test data management |
-| [08-ci-cd-integration](docs/08-ci-cd-integration.md) | CI pipeline and artifacts |
-| [09-reporting](docs/09-reporting.md) | Reports, screenshots and videos |
+| Guide | Description |
+| :--- | :--- |
+| [Installation](docs/01-installation.md) | Setup and verification |
+| [Project structure](docs/02-project-structure.md) | Folder rules |
+| [Best practices](docs/03-best-practices.md) | Cypress and TypeScript conventions |
+| [Page object model](docs/04-page-object-model.md) | Page-object rules |
+| [Custom commands](docs/05-custom-commands.md) | Shared command patterns |
+| [Configuration](docs/06-configuration.md) | Cypress, TypeScript, ESLint, env |
+| [Fixtures and test data](docs/07-fixtures-test-data.md) | Data management |
+| [CI/CD](docs/08-ci-cd-integration.md) | Pipeline and artifacts |
+| [Reporting](docs/09-reporting.md) | Reports, screenshots, videos |
+
+## Troubleshooting
+
+| Symptom | Fix |
+| :--- | :--- |
+| Tests hit the wrong URL | Set `CYPRESS_BASE_URL`; the default is SauceDemo. |
+| Tag filter runs nothing | Tags must exist on the spec or test; check the `@smoke` spelling. |
+| `npm test` fails on Node | Use Node 22 (`nvm use`) — see `.nvmrc`. |
+| Type or lint errors | Run `npm run verify`; it runs type-check, ESLint, and Prettier. |
+| Videos make CI artifacts huge | Set `video: false` locally or when storage is tight. |
+| Report is empty | Mochawesome writes at process exit; let the run finish. |
+
+## License
+
+MIT. See [`LICENSE`](LICENSE).
