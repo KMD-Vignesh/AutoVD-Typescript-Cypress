@@ -9,7 +9,6 @@ Cypress · TypeScript · Page Objects · Custom Commands · Mochawesome</p>
   <a href="https://github.com/KMD-Vignesh/AutoVD-Typescript-Cypress"><img src="https://img.shields.io/badge/Node-22-5FA04E?style=for-the-badge&logo=nodedotjs&logoColor=white" alt="Node 22"></a>
   <a href="https://github.com/KMD-Vignesh/AutoVD-Typescript-Cypress"><img src="https://img.shields.io/badge/Cypress-16.2-69D3A7?style=for-the-badge&logo=cypress&logoColor=white" alt="Cypress 16.2"></a>
   <a href="https://github.com/KMD-Vignesh/AutoVD-Typescript-Cypress"><img src="https://img.shields.io/badge/TypeScript-5.9-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript 5.9"></a>
-  <a href="https://github.com/KMD-Vignesh/AutoVD-Typescript-Cypress/actions/workflows/e2e.yml"><img src="https://github.com/KMD-Vignesh/AutoVD-Typescript-Cypress/actions/workflows/e2e.yml/badge.svg" alt="E2E"></a>
   <a href="https://github.com/KMD-Vignesh/AutoVD-Typescript-Cypress/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-2EA44F?style=for-the-badge" alt="MIT License"></a>
 </p>
 
