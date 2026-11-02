@@ -1,24 +1,11 @@
-import { LoginPage } from '../../page-objects/saucedemo/LoginPage.po';
-import { ProductsPage } from '../../page-objects/saucedemo/ProductsPage.po';
+import { ProductsPage } from '../../page-objects/saucedemo/ProductsPage';
 import * as users from '../../fixtures/saucedemo/users.json';
 
 describe('SauceDemo - Products Module', () => {
-  let loginPage: LoginPage;
-  let productsPage: ProductsPage;
+  const productsPage = new ProductsPage();
 
   beforeEach(() => {
-    loginPage = new LoginPage();
-    productsPage = new ProductsPage();
-    loginPage.visit();
-    loginPage.login(users.validUser);
-  });
-
-  // Capture screenshot on test failure for debugging
-  afterEach(function () {
-    const test = this.currentTest;
-    if (test?.state === 'failed') {
-      cy.screenshot(`products-failed-${test.title.replace(/\s+/g, '-')}`);
-    }
+    cy.login(users.validUser);
   });
 
   describe('Product Listing', () => {
@@ -30,23 +17,25 @@ describe('SauceDemo - Products Module', () => {
 
     it('should sort products by price low to high', () => {
       productsPage.sortBy('lohi');
-      productsPage.getProductPrices().then(($prices: JQuery<HTMLElement>) => {
-        const priceValues = $prices
-          .toArray()
-          .map((el: HTMLElement) => parseFloat(Cypress.$(el).text().replace('$', '')));
-        for (let i = 0; i < priceValues.length - 1; i++) {
-          expect(priceValues[i]).to.be.lte(priceValues[i + 1]);
-        }
+      productsPage.getProductPrices().should(($prices) => {
+        const prices = $prices.toArray().map((el) => Number(el.innerText.replace('$', '')));
+        prices.forEach((price, index) => {
+          if (index > 0) {
+            expect(price).to.be.gte(prices[index - 1]);
+          }
+        });
       });
     });
 
     it('should sort products by name Z to A', () => {
       productsPage.sortBy('za');
-      productsPage.getProductNames().then(($names: JQuery<HTMLElement>) => {
-        const nameValues = $names.toArray().map((el: HTMLElement) => Cypress.$(el).text());
-        for (let i = 0; i < nameValues.length - 1; i++) {
-          expect(nameValues[i].localeCompare(nameValues[i + 1])).to.be.gte(0);
-        }
+      productsPage.getProductNames().should(($names) => {
+        const names = $names.toArray().map((el) => el.innerText);
+        names.forEach((name, index) => {
+          if (index > 0) {
+            expect(names[index - 1].localeCompare(name)).to.be.gte(0);
+          }
+        });
       });
     });
   });
@@ -64,7 +53,7 @@ describe('SauceDemo - Products Module', () => {
     });
 
     it('should add all products to cart', () => {
-      productsPage.getProductNames().then(($names: JQuery<HTMLElement>) => {
+      productsPage.getProductNames().then(($names) => {
         productsPage.addAllProductsToCart();
         productsPage.assertCartBadgeCount($names.length);
       });

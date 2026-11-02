@@ -1,6 +1,6 @@
-import { BasePage } from '../base/BasePage.po';
+import { BasePage } from '../base/BasePage';
 
-interface LoginCredentials {
+export interface LoginCredentials {
   username: string;
   password: string;
 }
@@ -31,7 +31,8 @@ export class LoginPage extends BasePage {
    * @param username - Username to type
    */
   enterUsername(username: string) {
-    cy.get(this.selectors.usernameInput).clear().type(username);
+    cy.get(this.selectors.usernameInput).clear();
+    cy.get(this.selectors.usernameInput).type(username);
     return this;
   }
 
@@ -40,7 +41,8 @@ export class LoginPage extends BasePage {
    * @param password - Password to type
    */
   enterPassword(password: string) {
-    cy.get(this.selectors.passwordInput).clear().type(password);
+    cy.get(this.selectors.passwordInput).clear();
+    cy.get(this.selectors.passwordInput).type(password);
     return this;
   }
 
@@ -57,9 +59,7 @@ export class LoginPage extends BasePage {
    * @param credentials - Login credentials { username, password }
    */
   login(credentials: LoginCredentials) {
-    this.enterUsername(credentials.username)
-      .enterPassword(credentials.password)
-      .clickLogin();
+    this.enterUsername(credentials.username).enterPassword(credentials.password).clickLogin();
     return this;
   }
 

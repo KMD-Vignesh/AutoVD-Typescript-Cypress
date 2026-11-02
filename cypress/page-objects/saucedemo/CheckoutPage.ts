@@ -1,6 +1,6 @@
-import { BasePage } from '../base/BasePage.po';
+import { BasePage } from '../base/BasePage';
 
-interface CheckoutUserInfo {
+export interface CheckoutUserInfo {
   firstName: string;
   lastName: string;
   zipCode: string;
@@ -70,15 +70,6 @@ export class CheckoutPage extends BasePage {
   }
 
   /**
-   * Fill checkout information with empty fields (for negative testing)
-   * Leaves all fields empty
-   */
-  fillCheckoutInformationEmpty() {
-    // Intentionally leave all fields empty
-    return this;
-  }
-
-  /**
    * Click continue on step 1
    */
   clickContinueStep1() {
@@ -115,7 +106,10 @@ export class CheckoutPage extends BasePage {
    */
   assertCheckoutCompleteLoaded() {
     cy.get(this.completeSelectors.headerTitle).should('contain.text', 'Checkout: Complete!');
-    cy.get(this.completeSelectors.completeHeader).should('contain.text', 'Thank you for your order!');
+    cy.get(this.completeSelectors.completeHeader).should(
+      'contain.text',
+      'Thank you for your order!'
+    );
     cy.get(this.completeSelectors.ponyExpressImage).should('be.visible');
     return this;
   }

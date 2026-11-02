@@ -1,4 +1,4 @@
-import { LoginPage } from '../../page-objects/saucedemo/LoginPage.po';
+import { LoginPage } from '../../page-objects/saucedemo/LoginPage';
 import * as users from '../../fixtures/saucedemo/users.json';
 
 describe('SauceDemo - Login Module', () => {

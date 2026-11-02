@@ -1,4 +1,4 @@
-import { BasePage } from '../base/BasePage.po';
+import { BasePage } from '../base/BasePage';
 
 /**
  * Page Object for SauceDemo Products/Inventory Page
@@ -51,9 +51,7 @@ export class ProductsPage extends BasePage {
    * @param productName - Name of the product to add to cart
    */
   addProductToCartByName(productName: string) {
-    cy.contains('.inventory_item', productName)
-      .find(this.selectors.addToCartButton)
-      .click();
+    cy.contains('.inventory_item', productName).find(this.selectors.addToCartButton).click();
     return this;
   }
 
@@ -80,13 +78,11 @@ export class ProductsPage extends BasePage {
    */
   assertCartBadgeCount(count: number) {
     if (count === 0) {
-      // When cart is empty, SauceDemo removes the badge element entirely
-      cy.get('body').then(($body) => {
-        expect($body.find(this.selectors.shoppingCartBadge).length).to.eq(0);
-      });
+      // SauceDemo removes the badge element when the cart is empty
+      cy.get(this.selectors.shoppingCartBadge).should('not.exist');
       return this;
     }
-    cy.get(this.selectors.shoppingCartBadge).should('contain.text', count.toString());
+    cy.get(this.selectors.shoppingCartBadge).should('have.text', count.toString());
     return this;
   }
 
@@ -99,23 +95,11 @@ export class ProductsPage extends BasePage {
   }
 
   /**
-   * Open the sidebar menu with retry for headless stability
+   * Open the sidebar menu
    */
   openMenu() {
-    // Wait for menu button to be present and visible
-    cy.get(this.selectors.menuButton, { timeout: 10000 }).should('be.visible');
-
-    // Click with force to handle headless overlay issues
-    cy.get(this.selectors.menuButton).click({ force: true });
-
-    // Wait for sidebar to appear (retry up to 3 times if flaky)
-    cy.get('body').then(($body) => {
-      if (!$body.find(this.selectors.sidebar).length) {
-        cy.get(this.selectors.menuButton).click({ force: true });
-      }
-    });
-
-    cy.get(this.selectors.sidebar, { timeout: 10000 }).should('be.visible');
+    cy.get(this.selectors.menuButton).should('be.visible').click();
+    cy.get(this.selectors.sidebar).should('be.visible');
     return this;
   }
 
@@ -139,7 +123,7 @@ export class ProductsPage extends BasePage {
    * Sort products by option value
    * @param value - Sort option value (az, za, lohi, hilo)
    */
-  sortBy(value: string) {
+  sortBy(value: 'az' | 'za' | 'lohi' | 'hilo') {
     cy.get(this.selectors.sortDropdown).select(value);
     return this;
   }

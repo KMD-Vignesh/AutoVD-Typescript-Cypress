@@ -1,4 +1,4 @@
-import { BasePage } from '../base/BasePage.po';
+import { BasePage } from '../base/BasePage';
 
 /**
  * Page Object for SauceDemo Cart Page
@@ -52,9 +52,7 @@ export class CartPage extends BasePage {
    * @param productName - Name of the product to remove
    */
   removeProductFromCart(productName: string) {
-    cy.contains('.cart_item', productName)
-      .find(this.selectors.removeButton)
-      .click();
+    cy.contains('.cart_item', productName).find(this.selectors.removeButton).click();
     return this;
   }
 
