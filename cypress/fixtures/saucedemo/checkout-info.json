@@ -1,0 +1,17 @@
+{
+  "validInfo": {
+    "firstName": "John",
+    "lastName": "Doe",
+    "zipCode": "12345"
+  },
+  "emptyInfo": {
+    "firstName": "",
+    "lastName": "",
+    "zipCode": ""
+  },
+  "partialInfo": {
+    "firstName": "John",
+    "lastName": "",
+    "zipCode": "12345"
+  }
+}

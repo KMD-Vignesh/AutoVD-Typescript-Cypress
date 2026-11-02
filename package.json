@@ -1,0 +1,29 @@
+{
+  "name": "autovd-cypress-typescript",
+  "version": "1.0.0",
+  "description": "Scalable Cypress TypeScript Test Framework",
+  "scripts": {
+    "cypress:open": "cypress open",
+    "cypress:run": "cypress run",
+    "cypress:run:chrome": "cypress run --browser chrome",
+    "cypress:run:electron": "cypress run --browser electron",
+    "lint": "eslint cypress/ --ext .ts",
+    "lint:fix": "eslint cypress/ --ext .ts --fix",
+    "format": "prettier --write cypress/",
+    "type-check": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "cypress": "^13.0.0",
+    "cypress-mochawesome-reporter": "^3.0.0",
+    "eslint": "^8.0.0",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-cypress": "^2.0.0",
+    "eslint-plugin-import": "^2.0.0",
+    "mochawesome": "^7.0.0",
+    "mochawesome-merge": "^4.0.0",
+    "mochawesome-report-generator": "^6.3.2",
+    "prettier": "^3.0.0",
+    "typescript": "^5.0.0"
+  }
+}
