@@ -1,175 +1,179 @@
 # 08 - CI/CD Integration
 
-This document covers integrating the AutoVD Cypress framework with CI/CD pipelines.
+The repository ships with a GitHub Actions workflow at `.github/workflows/e2e.yml`.
 
 ---
 
-## Overview
-
-The framework is designed to run in any CI/CD environment (GitHub Actions, GitLab CI, Jenkins, CircleCI, Azure DevOps, etc.).
-
----
-
-## GitHub Actions Example
-
-Create `.github/workflows/cypress.yml`:
+## Pipeline
 
 ```yaml
-name: Cypress Tests
+name: E2E
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main]
   pull_request:
-    branches: [main, develop]
+  workflow_dispatch:
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  cypress-run:
+  test:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version-file: .nvmrc
+          cache: npm
 
-      - name: Install Dependencies
+      - name: Install dependencies
         run: npm ci
 
-      - name: Run Cypress Tests
-        run: npm run cypress:run -- --browser chrome --headless
-        env:
-          CYPRESS_BASE_URL: ${{ secrets.BASE_URL }}
-          CYPRESS_API_URL: ${{ secrets.API_URL }}
+      - name: Type-check, lint and format check
+        run: npm run verify
 
-      - name: Upload Cypress Screenshots
-        uses: actions/upload-artifact@v4
-        if: failure()
+      - name: Run Cypress
+        uses: cypress-io/github-action@v7
         with:
-          name: cypress-screenshots
-          path: cypress/screenshots/
+          install: false
+          browser: chrome
 
-      - name: Upload Cypress Videos
+      - name: Upload artifacts
+        if: always()
         uses: actions/upload-artifact@v4
-        if: failure()
         with:
-          name: cypress-videos
+          name: cypress-artifacts
+          path: |
+            reports/
+            cypress/screenshots/
+            cypress/videos/
+          if-no-files-found: ignore
+```
+
+What each part does:
+
+- **Node version** comes from `.nvmrc` (22), so local and CI match.
+- **`npm ci`** installs exact versions and the Cypress binary.
+- **`npm run verify`** fails the build on type, lint or formatting errors before tests run.
+- **`install: false`** tells the Cypress action to reuse the binary from `npm ci`.
+- **Artifacts** are uploaded even when tests fail, so screenshots and reports are available.
 
 ---
 
-## GitLab CI Example
+## Local equivalent
 
-Create `.gitlab-ci.yml`:
+```bash
+npm ci
+npm run verify
+npm test
+```
+
+Do not run `npm run test:smoke` in place of the full suite in CI. Use it as a fast pre-check or a separate targeted job.
+
+---
+
+## Artifacts
+
+| Artifact | Path | When |
+|---|---|---|
+| HTML report | `reports/index.html` | Every run |
+| JSON results | `reports/.jsons/` | Every run |
+| Videos | `cypress/videos/` | Every spec (video is on) |
+| Failure screenshots | `cypress/screenshots/` | Failed tests only |
+
+`cypress-artifacts` is the artifact name in GitHub Actions. Retention follows the repository setting (default 90 days).
+
+---
+
+## Environment-specific runs
+
+Set the target URL through a repository variable or secret:
 
 ```yaml
-stages:
-  - test
+- name: Run Cypress
+  uses: cypress-io/github-action@v7
+  env:
+    CYPRESS_BASE_URL: ${{ vars.CYPRESS_BASE_URL }}
+  with:
+    install: false
+    browser: chrome
+```
 
-cypress_tests:
+Keep `CYPRESS_BASE_URL` out of source control. The workflow falls back to the SauceDemo URL when the variable is empty.
+
+---
+
+## Other providers
+
+The same commands work anywhere Node 22 and Chrome are available.
+
+### GitLab CI
+
+```yaml
+stages: [test]
+
+e2e:
   stage: test
-  image: node:20
-  before_script:
-    - npm ci
+  image: cypress/browsers:latest
   script:
-    - npm run cypress:run -- --browser chrome --headless
+    - npm ci
+    - npm run verify
+    - npm test
   artifacts:
     when: always
     paths:
+      - reports/
       - cypress/screenshots/
       - cypress/videos/
-      - reports/
     expire_in: 1 week
-  only:
-    - main
-    - merge_requests
 ```
 
----
-
-## Jenkins Pipeline Example
-
-Create `Jenkinsfile`:
+### Jenkins
 
 ```groovy
 pipeline {
-    agent any
-
-    environment {
-        CYPRESS_BASE_URL = 'https://staging.example.com'
-        CYPRESS_API_URL = 'https://api.staging.example.com'
+  agent any
+  stages {
+    stage('Install') { steps { sh 'npm ci' } }
+    stage('Verify') { steps { sh 'npm run verify' } }
+    stage('E2E') { steps { sh 'npm test' } }
+  }
+  post {
+    always {
+      archiveArtifacts artifacts: 'reports/**, cypress/screenshots/**, cypress/videos/**',
+                       allowEmptyArchive: true
     }
-
-    stages {
-        stage('Checkout') {
-            steps {
-                checkout scm
-            }
-        }
-
-        stage('Install Dependencies') {
-            steps {
-                sh 'npm ci'
-            }
-        }
-
-        stage('Run Cypress Tests') {
-            steps {
-                sh 'npm run cypress:run -- --browser chrome --headless'
-            }
-            post {
-                always {
-                    archiveArtifacts artifacts: 'cypress/screenshots/**, cypress/videos/**, reports/**'
-                }
-            }
-        }
-    }
+  }
 }
 ```
 
+Do not commit generated reports or videos; upload them as CI artifacts.
+
 ---
 
-## Cypress Cloud (Dashboard) Integration
+## Cypress Cloud (optional)
 
-Record tests to Cypress Cloud for parallel execution and analytics:
+Recording is not required. To enable parallel runs and Cloud analytics, add a project ID and run:
 
 ```bash
-# Set your project ID in cypress.config.ts
-# Then run:
-npm run cypress:run -- --record --key <your-record-key> --parallel --ci-build-id $CI_BUILD_ID
+npx cypress run --record --key <record-key> --parallel --ci-build-id "$CI_BUILD_ID"
 ```
 
-Add to `cypress.config.ts`:
-
-```typescript
-export default defineConfig({
-  e2e: {
-    projectId: 'your-project-id', // From Cypress Cloud
-    // ... other config
-  },
-});
-```
+Store `record-key` as a CI secret. Keep `--parallel` off until the suite is large enough to benefit; parallel runs add orchestration cost.
 
 ---
 
-## CI/CD Best Practices
+## CI checklist
 
-| Practice | Why |
-|----------|-----|
-| Use `npm ci` instead of `npm install` | Reproducible, clean installs |
-| Run in headless mode | Faster, no GUI overhead |
-| Cache `node_modules` | Faster pipeline runs |
-| Upload artifacts on failure | Debug screenshots/videos |
-| Use environment variables | Secure, environment-specific config |
-| Run tests in parallel | Faster execution on large suites |
-| Pin Node.js version | Consistent behavior across environments |
-          path: cypress/videos/
-
-      - name: Upload Test Results
-        uses: actions/upload-artifact@v4
-        with:
-          name: cypress-results
-          path: reports/
-```
+- [ ] `npm ci` uses the lockfile
+- [ ] `npm run verify` gates the test run
+- [ ] `CYPRESS_BASE_URL` is configured per environment
+- [ ] Artifacts upload on failure
+- [ ] The workflow is cancelled when a newer commit lands
+- [ ] The Node version comes from `.nvmrc`

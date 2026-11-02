@@ -1,353 +1,257 @@
-# 03 - Cypress + TypeScript Best Practices
+# 03 - Best Practices
 
-This document outlines industry best practices for writing clean, maintainable, and scalable Cypress tests with TypeScript.
-
----
-
-## 1. TypeScript Best Practices
-
-### Enable Strict Mode
-
-Always use TypeScript strict mode in `tsconfig.json`:
-
-```json
-{
-  "compilerOptions": {
-    "strict": true,
-    "noImplicitAny": true,
-    "strictNullChecks": true,
-    "strictFunctionTypes": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true
-  }
-}
-```
-
-### Use Interfaces Over Types for Objects
-
-```typescript
-// ✅ Good
-interface User {
-  id: number;
-  email: string;
-  password: string;
-  role?: string;
-}
-
-// ❌ Avoid for object shapes
-type User = {
-  id: number;
-  email: string;
-};
-```
-
-### Avoid `any`
-
-```typescript
-// ❌ Bad
-const user: any = { id: 1, name: 'John' };
-
-// ✅ Good
-interface User {
+Conventions used across this framework. Examples use SauceDemo selectors and the current `cy.login` command.
 
 ---
 
-## 2. Cypress Test Best Practices
+## 1. Selectors
 
-### Use `data-*` Attributes for Selectors
-
-Avoid using CSS classes or IDs that may change. Use dedicated test attributes:
-
-```html
-<!-- Application HTML -->
-<button data-testid="submit-btn" class="btn btn-primary">Submit</button>
-```
+### Prefer stable test attributes
 
 ```typescript
-// ✅ Good - stable selector
-cy.get('[data-testid="submit-btn"]').click();
+// Good: supplied for automation and unlikely to change
+cy.get('[data-test="login-button"]').click();
 
-// ❌ Bad - brittle, breaks on CSS changes
-cy.get('.btn.btn-primary').click();
-cy.get('#submit-btn').click();
+// Fragile: breaks when copy or layout changes
+cy.contains('Login').click();
 ```
 
-### Never Use Hardcoded Sleeps
+SauceDemo exposes `data-test` attributes. Keep selectors inside page objects.
+
+### Scope broad selectors
 
 ```typescript
-// ❌ Bad - flaky and slow
-cy.wait(5000);
+// Good: one row, then its action
+cy.contains('.inventory_item', productName)
+  .find('[data-test^="add-to-cart-"]')
+  .click();
 
-// ✅ Good - wait for specific conditions
-cy.get('[data-testid="submit-btn"]').should('be.visible');
-cy.intercept('GET', '/api/users').as('getUsers');
-cy.wait('@getUsers');
+// Risky: matches the first button on the page
+cy.get('[data-test^="add-to-cart-"]').first().click();
 ```
 
-### Use `cy.intercept()` for API Stubbing
+---
+
+## 2. Waits and Assertions
+
+### Never hard-wait for a fixed time
 
 ```typescript
-// ✅ Good - stub API responses
-cy.intercept('GET', '/api/users', { fixture: 'users' }).as('getUsers');
-cy.visit('/dashboard');
-cy.wait('@getUsers');
+// Bad
+cy.wait(3000);
 
-// ✅ Good - assert on API calls
-cy.intercept('POST', '/api/login').as('postLogin');
-cy.get('[data-testid="login-btn"]').click();
-cy.wait('@postLogin').then((interception) => {
-  expect(interception.response?.statusCode).to.eq(200);
+// Good: Cypress retries the assertion until it passes or times out
+cy.get('.inventory_list').should('be.visible');
+```
+
+`cy.wait()` is acceptable only for a network alias when the response timing matters.
+
+### Assert on retryable state
+
+```typescript
+// Good: retries until the badge disappears
+cy.get('.shopping_cart_badge').should('not.exist');
+
+// Bad: runs once, before the UI has settled
+cy.get('body').then(($body) => {
+  expect($body.find('.shopping_cart_badge')).to.have.length(0);
 });
 ```
 
-### Use Custom Commands for Repetitive Actions
+---
+
+## 3. Test Independence
+
+Each test starts from a known state. Cypress test isolation clears cookies and storage between tests.
 
 ```typescript
-// Instead of repeating this in every test:
-cy.visit('/login');
-cy.get('[data-testid="email"]').type(user.email);
-cy.get('[data-testid="password"]').type(user.password);
-cy.get('[data-testid="login-btn"]').click();
+describe('Products', () => {
+  beforeEach(() => {
+    cy.login(users.validUser);
+  });
 
-// Create a custom command (see cypress/support/commands.ts):
+  it('adds one product', () => {
+    productsPage.addProductToCartByName('Sauce Labs Backpack');
+    productsPage.assertCartBadgeCount(1);
+  });
+});
+```
+
+Do not depend on a product added by a previous test. Do not share mutable objects between tests.
 
 ---
 
-## 3. Page Object Model Best Practices
+## 4. Page Objects and Commands
 
-### Encapsulate Selectors in Page Objects
-
-```typescript
-// ✅ Good - LoginPage.po.ts
-export class LoginPage {
-  private selectors = {
-    email: '[data-testid="email-input"]',
-    password: '[data-testid="password-input"]',
-    submit: '[data-testid="login-btn"]',
-    errorMessage: '[data-testid="error-msg"]',
-  };
-
-  visit() {
-    cy.visit('/login');
-  }
-
-  enterEmail(email: string) {
-    cy.get(this.selectors.email).type(email);
-    return this;
-  }
-
-  enterPassword(password: string) {
-    cy.get(this.selectors.password).type(password);
-    return this;
-  }
-
-  submit() {
-    cy.get(this.selectors.submit).click();
-
----
-
-## 4. Test Data & Fixtures Best Practices
-
-### Use Fixtures for Static Data
+| Use a page object when | Use a command when |
+|---|---|
+| The logic belongs to one page | The flow spans pages |
+| It maps selectors to actions | It is shared setup (login, seed data) |
+| It returns page-level assertions | It wraps a reusable workflow |
 
 ```typescript
-// ✅ Good - load from fixture
-cy.fixture('users').then((users) => {
+// Page object action
+productsPage.addProductToCartByName('Sauce Labs Backpack');
+
+// Shared command
+beforeEach(() => {
   cy.login(users.validUser);
 });
-
-// ✅ Good - import JSON directly (with resolveJsonModule)
-import * as users from '../../fixtures/auth/users.json';
 ```
 
-### Generate Dynamic Data with Utilities
+Rules:
 
-```typescript
-// ✅ Good - generate unique data per test run
-const email = generateRandomEmail(); // user_123456@example.com
-const password = generateRandomPassword(12);
-```
+- Selectors stay `private` in the page object.
+- Actions return `this`; getters return Cypress chains.
+- Commands reuse page objects; they do not duplicate selectors.
+- Every custom command has a type declaration in `support/types.d.ts`.
+
+See `docs/04-page-object-model.md` and `docs/05-custom-commands.md`.
 
 ---
 
-## 5. Custom Commands Best Practices
+## 5. Test Data
 
-### Add TypeScript Type Declarations
-
-```typescript
-// cypress/support/types.d.ts
-declare namespace Cypress {
-  interface Chainable {
-    /**
-
----
-
-## 6. Assertion Best Practices
-
-### Use Explicit Assertions
+### Use fixtures for static data
 
 ```typescript
-// ✅ Good - explicit and readable
-cy.get('[data-testid="user-name"]').should('contain.text', 'John Doe');
-cy.get('[data-testid="email"]').should('have.value', 'john@example.com');
-cy.get('[data-testid="submit-btn"]').should('be.disabled');
-cy.get('[data-testid="alert"]').should('have.class', 'alert-success');
+import * as users from '../../fixtures/saucedemo/users.json';
 
-// ✅ Good - use `should` with callback for complex assertions
-cy.get('[data-testid="user-list"]').should(($list) => {
-  expect($list).to.have.length(3);
-  expect($list.eq(0)).to.contain('Alice');
+beforeEach(() => {
+  cy.login(users.validUser);
 });
 ```
 
-### Avoid Chaining Too Many Commands
+### Generate data only when uniqueness is required
 
 ```typescript
-// ❌ Hard to debug
-cy.get('[data-testid="form"]').find('[data-testid="email"]').type('test@test.com').find('[data-testid="submit"]').click();
-
-// ✅ Break into readable steps
-cy.get('[data-testid="email"]').type('test@test.com');
-cy.get('[data-testid="submit"]').click();
+const uniqueEmail = `user.${Date.now()}@example.com`;
 ```
+
+Do not add a shared generator for one caller. Extract it when a second spec needs it.
+
+Never put real credentials in fixtures. Use environment variables for secrets.
 
 ---
 
-## 7. CI/CD Best Practices
+## 6. TypeScript
 
-### Use `npm ci` for Clean Installs
-
-```bash
-# In CI/CD pipelines
-npm ci
-npm run cypress:run
-```
-
-### Run Tests in Parallel (Cypress Cloud/Dashboard)
-
-```bash
-# Requires Cypress Cloud project ID
-npm run cypress:run -- --record --parallel --ci-build-id $CI_BUILD_ID
-```
-
-### Always Use Headless Mode in CI
-
-```bash
-npm run cypress:run -- --browser chrome --headless
-```
-
----
-
-## 8. Code Quality Checklist
-
-Before submitting a PR, verify:
-
-- [ ] No `cy.wait()` with hardcoded milliseconds (except for debugging)
-- [ ] All selectors use `data-testid` or stable attributes
-- [ ] No `any` types (use `unknown` if necessary)
-- [ ] Tests are independent (no shared state between `it` blocks)
-- [ ] Page objects encapsulate all UI selectors
-- [ ] Custom commands have JSDoc and type declarations
-- [ ] Fixtures are used for static test data
-- [ ] TypeScript strict mode passes (`npm run type-check`)
-- [ ] ESLint passes (`npm run lint`)
-- [ ] Prettier formatting is consistent (`npm run format`)
-     * Custom login command
-     * @param credentials - User credentials { email, password }
-     */
-    login(credentials: { email: string; password: string }): Chainable<void>;
-
-    /**
-     * Custom registration command
-     */
-    register(user: User): Chainable<void>;
-
-    /**
-     * Assert element is visible and enabled
-     */
-    assertVisibleAndEnabled(): Chainable<void>;
-  }
-}
-```
-
-### Document Commands with JSDoc
-
-All custom commands should have JSDoc comments describing parameters and return types.
-    return this;
-  }
-
-  login(email: string, password: string) {
-    this.enterEmail(email).enterPassword(password).submit();
-  }
-
-  getErrorMessage() {
-    return cy.get(this.selectors.errorMessage);
-  }
-}
-```
-
-### Use Methods That Return `this` for Chaining
+Strict mode is enabled. Keep it useful:
 
 ```typescript
-// ✅ Chainable page object methods
-loginPage.enterEmail('user@test.com').enterPassword('pass123').submit();
-```
-cy.login(user);
-```
-
-### Keep Tests Independent
-
-Each test should be able to run in isolation. Don't rely on state from previous tests:
-
-```typescript
-// ✅ Good - each test sets up its own state
-describe('Dashboard', () => {
-  beforeEach(() => {
-    cy.login({ email: 'user@test.com', password: 'secret123' });
-  });
-
-  it('should display welcome message', () => {
-    cy.visit('/dashboard');
-    cy.get('[data-testid="welcome-msg"]').should('contain', 'Welcome');
-  });
-
-  it('should show user profile', () => {
-    cy.visit('/dashboard/profile');
-    cy.get('[data-testid="user-profile"]').should('be.visible');
-  });
-});
-```
-
-### Use `data-testid` Over Text-Based Selectors
-
-```typescript
-// ❌ Bad - breaks when text changes
-cy.contains('Login').click();
-
-// ✅ Good - stable and intentional
-cy.get('[data-testid="login-btn"]').click();
-```
-  id: number;
-  name: string;
+// Good: explicit model
+interface CheckoutUserInfo {
+  firstName: string;
+  lastName: string;
+  zipCode: string;
 }
-const user: User = { id: 1, name: 'John' };
 
-// ✅ If you must, use unknown and narrow
-const data: unknown = response.body;
-if (typeof data === 'object' && data !== null) {
+// Good: unknown at the boundary, then narrow
+const body: unknown = response.body;
+if (typeof body === 'object' && body !== null) {
   // safe access
 }
+
+// Avoid: any turns off the compiler
+const data: any = response.body;
 ```
 
-### Use Type Aliases for Union Types
+Use union types for bounded values:
 
 ```typescript
-type Role = 'admin' | 'user' | 'guest';
-type Status = 'pending' | 'active' | 'inactive';
-
-interface User {
-  role: Role;
-  status: Status;
+sortBy(value: 'az' | 'za' | 'lohi' | 'hilo') {
+  cy.get(this.selectors.sortDropdown).select(value);
 }
 ```
+
+`tsconfig.json` enables `noUnusedLocals` and `noUnusedParameters`. Delete dead helpers instead of disabling the rules.
+
+---
+
+## 7. Network
+
+Intercept before the action that triggers the request:
+
+```typescript
+cy.intercept('GET', '/api/users').as('getUsers');
+cy.get('[data-test="load-users"]').click();
+cy.wait('@getUsers');
+```
+
+Stub only when the test is about frontend behavior, not when it is an end-to-end flow:
+
+```typescript
+cy.intercept('GET', '/api/users', { fixture: 'saucedemo/users' });
+```
+
+For the SauceDemo suite, prefer real UI flows. A mocked checkout proves less than a real one.
+
+---
+
+## 8. Error Handling
+
+Do not suppress uncaught application errors globally:
+
+```typescript
+// Bad: hides real regressions
+Cypress.on('uncaught:exception', () => false);
+```
+
+If a known third-party error must be ignored, match its message and document why:
+
+```typescript
+Cypress.on('uncaught:exception', (error) => {
+  if (error.message.includes('ResizeObserver loop')) {
+    return false;
+  }
+});
+```
+
+Cypress already captures a screenshot on failure. Do not add a second screenshot in `afterEach`.
+
+---
+
+## 9. CI
+
+```bash
+npm ci
+npm run verify
+npm test
+```
+
+- `npm ci` for reproducible installs.
+- `npm run verify` before tests so type/lint/format failures fail fast.
+- Headless Chrome in CI.
+- Upload `reports/`, screenshots and videos as artifacts.
+- Pin Node through `.nvmrc`.
+
+Details: `docs/08-ci-cd-integration.md`.
+
+---
+
+## 10. Review checklist
+
+- [ ] No selectors in specs
+- [ ] No `cy.wait(number)`
+- [ ] Assertions retry (`.should(...)`)
+- [ ] Each test sets up its own state
+- [ ] Page object actions return `this`
+- [ ] Custom commands are typed and documented
+- [ ] Fixtures contain only data that is used
+- [ ] No `any` without a comment
+- [ ] `npm run verify` passes
+- [ ] Critical paths are tagged `@smoke`
+
+---
+
+## 11. Anti-patterns
+
+| Anti-pattern | Why it hurts |
+|---|---|
+| `cy.wait(5000)` | Slows every run and still flakes |
+| `cy.get('body').then(...)` for visibility | Does not retry |
+| One `AllPages.ts` class | Everything changes together |
+| Global `uncaught:exception` suppression | Hides real failures |
+| Duplicate screenshot handlers | Noise and conflicting errors |
+| Unused helpers and fixtures | Misleading surface area |
+| Testing through the UI for setup | Slow and brittle; use commands/API when available |

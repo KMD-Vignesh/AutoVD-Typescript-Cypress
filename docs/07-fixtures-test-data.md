@@ -1,161 +1,132 @@
 # 07 - Fixtures & Test Data
 
-This document covers test data management using Cypress fixtures and TypeScript.
+Fixtures are static JSON files under `cypress/fixtures/`. They are grouped by module like specs and page objects.
 
 ---
 
-## What Are Fixtures?
-
-Fixtures are static data files (typically JSON) used as test data in Cypress tests. They live in `cypress/fixtures/`.
-
----
-
-## Folder Structure for Fixtures
+## Current fixtures
 
 ```
 cypress/fixtures/
-├── auth/
-│   └── users.json
-├── dashboard/
-│   └── widgets.json
-├── common/
-│   └── navigation.json
-└── api/
-    └── responses.json
+└── saucedemo/
+    ├── users.json
+    └── checkout-info.json
 ```
 
----
-
-## Example Fixture Files
-
-### `cypress/fixtures/auth/users.json`
+`users.json`:
 
 ```json
 {
   "validUser": {
-    "email": "user@example.com",
-    "password": "securePassword123"
+    "username": "standard_user",
+    "password": "secret_sauce"
+  },
+  "lockedOutUser": {
+    "username": "locked_out_user",
+    "password": "secret_sauce"
   },
   "invalidUser": {
-    "email": "wrong@example.com",
-    "password": "wrongPassword"
-  },
-  "newUser": {
-    "name": "Test User",
-
----
-
-## Using Fixtures in Tests
-
-### Method 1: `cy.fixture()` (Asynchronous)
-
-```typescript
-// cypress/e2e/auth/login.cy.ts
-describe('Login', () => {
-  it('should log in with valid user', () => {
-    cy.fixture('users').then((users) => {
-      cy.login(users.validUser);
-    });
-  });
-});
-```
-
-### Method 2: Import JSON directly (TypeScript)
-
-With `resolveJsonModule: true` in `tsconfig.json`:
-
-```typescript
-// cypress/e2e/auth/login.cy.ts
-import * as users from '../../fixtures/auth/users.json';
-
-describe('Login', () => {
-  it('should log in with valid user', () => {
-    cy.login(users.validUser);
-  });
-});
-```
-
----
-
-## Dynamic Test Data Generation
-
-For data that shouldn't be static, use utility functions:
-
-```typescript
-// cypress/utils/data-generator.ts
-export function generateRandomEmail(prefix = 'user') {
-  const timestamp = Date.now();
-  const random = Math.floor(Math.random() * 10000);
-  return `${prefix}.${timestamp}.${random}@example.com`;
-}
-
-export function generateRandomPassword(length = 12) {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%';
-  let result = '';
-  for (let i = 0; i < length; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return result;
-}
-
-export function generateRandomUser() {
-  return {
-    name: `User_${Date.now()}`,
-    email: generateRandomEmail(),
-    password: generateRandomPassword(),
-  };
-}
-```
-
-Usage:
-
-```typescript
-// cypress/e2e/users/registration.cy.ts
-import { generateRandomUser } from '../../utils/data-generator';
-
-describe('Registration', () => {
-  it('should register a new user', () => {
-    const newUser = generateRandomUser();
-    cy.register(newUser);
-    // Assertions...
-  });
-});
-```
-
----
-
-## Fixture Best Practices
-
-| Do | Don't |
-|----|-------|
-| Use fixtures for static, reusable data | Put secrets/credentials in fixtures |
-| Group fixtures by module/folder | Put all fixtures in one flat folder |
-| Use descriptive keys (`validUser`, `adminUser`) | Use generic keys (`user1`, `user2`) |
-| Generate dynamic data for unique values | Use the same static data for every test run |
-| Version control fixtures in git | Commit sensitive data to fixtures |
-    "email": "testuser@example.com",
-    "password": "TestPass123!"
-  },
-  "adminUser": {
-    "email": "admin@example.com",
-    "password": "AdminPass123!"
+    "username": "invalid_user",
+    "password": "wrong_password"
   }
 }
 ```
 
-### `cypress/fixtures/dashboard/widgets.json`
+`checkout-info.json`:
 
 ```json
-[
-  {
-    "id": 1,
-    "name": "Analytics Widget",
-    "type": "chart"
-  },
-  {
-    "id": 2,
-    "name": "Recent Activity",
-    "type": "list"
+{
+  "validInfo": {
+    "firstName": "John",
+    "lastName": "Doe",
+    "zipCode": "12345"
   }
-]
+}
 ```
+
+Keep only data that a test uses. Unused fixture keys become stale and misleading.
+
+---
+
+## Using fixtures
+
+### Import JSON directly (recommended here)
+
+`tsconfig.json` sets `resolveJsonModule: true`, so imports are type-checked:
+
+```typescript
+import * as users from '../../fixtures/saucedemo/users.json';
+import * as checkoutInfo from '../../fixtures/saucedemo/checkout-info.json';
+
+beforeEach(() => {
+  cy.login(users.validUser);
+});
+
+it('completes checkout', () => {
+  checkoutPage.fillCheckoutInformation(checkoutInfo.validInfo);
+});
+```
+
+Advantages:
+
+- Type inference and autocomplete.
+- No asynchronous fixture loading.
+- A missing key or file is caught by `tsc`.
+
+### Cypress `cy.fixture()`
+
+Use it when the fixture must be loaded at runtime, for example a file chosen by environment:
+
+```typescript
+cy.fixture('saucedemo/users').then((users) => {
+  cy.login(users.validUser);
+});
+```
+
+Do not mix both styles for the same module without a reason.
+
+---
+
+## When to generate data
+
+Dynamic data is useful when a value must be unique per run, such as an email address. Keep the generator next to the test until a second test needs it:
+
+```typescript
+const uniqueEmail = `user.${Date.now()}@example.com`;
+```
+
+If three or more specs need the same generator, move it to a module-level helper and add a small test for the format. Do not add a generic `data-generator.ts` for one caller.
+
+SauceDemo uses fixed demo accounts, so its fixtures are static by design.
+
+---
+
+## Typing fixture data
+
+TypeScript infers imported JSON shapes. When a page object accepts a subset, define an interface at the page object and pass the fixture directly:
+
+```typescript
+// cypress/page-objects/saucedemo/CheckoutPage.ts
+export interface CheckoutUserInfo {
+  firstName: string;
+  lastName: string;
+  zipCode: string;
+}
+```
+
+Because the fixture shape matches, no cast is needed. Avoid `as` casts; they hide fixture drift.
+
+---
+
+## Best practices
+
+| Do | Don't |
+|---|---|
+| Group fixtures by module | Put every file in one flat folder |
+| Use descriptive keys (`validUser`, `lockedOutUser`) | Use `user1`, `user2` |
+| Keep fixtures small and used | Keep unused legacy records |
+| Generate unique values in the test when needed | Share one mutable object across tests |
+| Store non-sensitive demo data in git | Commit real credentials or tokens |
+| Use environment variables for secrets | Put secrets in JSON fixtures |
+
+Tests should be independently runnable. Do not let one spec mutate a fixture object that another spec reads.

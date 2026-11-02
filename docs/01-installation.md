@@ -1,238 +1,121 @@
 # 01 - Installation Guide
 
-This document covers the clean, original CLI-based installation of the AutoVD Cypress TypeScript framework. All steps use official package managers and official Cypress installation methods.
+Setup instructions for the AutoVD Cypress TypeScript framework.
+
+---
 
 ## Prerequisites
 
-Before installing, ensure you have the following installed:
-
-| Tool | Version | Download |
-|------|---------|----------|
-| Node.js | 18 LTS or higher | https://nodejs.org/ |
-| npm | Comes with Node.js | https://www.npmjs.com/ |
-| Git | 2.x or higher | https://git-scm.com/ |
-
-Verify your installation:
+| Tool | Version | Notes |
+|---|---|---|
+| Node.js | 22 | Matches `.nvmrc`; required by Cypress 16 and `@cypress/grep` |
+| npm | 10+ | Ships with Node 22 |
+| Git | 2.x | Clone the repository |
 
 ```bash
-node --version      # v18.x.x or higher
-npm --version       # 9.x.x or higher
-git --version       # git version 2.x.x
+node --version   # v22.x.x
+npm --version    # 10.x.x
+git --version
+```
+
+If you use `nvm`:
+
+```bash
+nvm use          # reads .nvmrc
 ```
 
 ---
 
-## Step 1: Initialize the Project
-
-Create a new directory and initialize a Node.js project with TypeScript support:
+## Install
 
 ```bash
-# Create project directory
-mkdir AutoVD-Typescript-Cypress
+git clone https://github.com/KMD-Vignesh/AutoVD-Typescript-Cypress.git
 cd AutoVD-Typescript-Cypress
-
-# Initialize npm project (creates package.json)
-npm init -y
-
-# Install TypeScript as a development dependency
-npm install --save-dev typescript
-```
-
-Verify TypeScript installation:
-
-```bash
-npx tsc --version
-```
-
----
-
-## Step 2: Install Cypress
-
-Install Cypress using the official npm package (the recommended way):
-
-```bash
-npm install --save-dev cypress
-```
-
-Verify Cypress installation:
-
-```bash
-npx cypress --version
-```
-
-> **Why this way?** Installing Cypress via npm ensures you get the exact version pinned in your `package.json`, enabling reproducible installs across environments and CI/CD pipelines.
-
----
-
-## Step 3: Install TypeScript & Supporting Tools
-
-Install additional development dependencies for type safety, linting, and testing utilities:
-
-```bash
-# TypeScript
-npm install --save-dev typescript
-
-# Type definitions for Node.js (if needed for custom utils)
-npm install --save-dev @types/node
-
-# ESLint for code linting
-npm install --save-dev eslint eslint-plugin-cypress eslint-plugin-import
-
-# Prettier for code formatting
-npm install --save-dev prettier eslint-config-prettier
-
-# cypress-plugin-tab (optional: better tab command)
-npm install --save-dev cypress-plugin-tab
-
-# cypress-mochawesome-reporter (optional: rich HTML reports)
-npm install --save-dev cypress-mochawesome-reporter mochawesome mochawesome-merge mochawesome-report-generator
-```
-
----
-
-## Step 4: Initialize TypeScript Configuration
-
-Generate the TypeScript configuration file:
-
-```bash
-npx tsc --init
-```
-
-This creates a `tsconfig.json` file. Update it for strict type checking (see `docs/06-configuration.md` for the full recommended config).
-
----
-
-## Step 5: Initialize Cypress Configuration
-
-Create the Cypress configuration file. Cypress 10+ uses `cypress.config.ts` (TypeScript) or `cypress.config.js`:
-
-```bash
-# Create the config file manually or let Cypress scaffold it
-npx cypress verify
-```
-
-> `cypress verify` ensures Cypress is installed correctly and can launch the browser.
-
----
-
-## Step 6: Add npm Scripts
-
-Add the following scripts to your `package.json`:
-
-```json
-{
-  "scripts": {
-    "cypress:open": "cypress open",
-    "cypress:run": "cypress run",
-    "cypress:run:chrome": "cypress run --browser chrome",
-    "cypress:run:electron": "cypress run --browser electron",
-    "lint": "eslint cypress/ --ext .ts",
-    "lint:fix": "eslint cypress/ --ext .ts --fix",
-    "format": "prettier --write cypress/",
-    "type-check": "tsc --noEmit"
-  }
-}
-```
-
----
-
-## Step 7: Clean Install (Reproducible)
-
-For a clean installation from scratch (e.g., on a new machine or CI):
-
-```bash
-# Clone the repository
-git clone <repository-url>
-cd AutoVD-Typescript-Cypress
-
-# Install all dependencies (uses package-lock.json for exact versions)
 npm ci
+```
 
-# Verify installation
+`npm ci` installs exact versions from `package-lock.json` and also downloads the Cypress binary.
+
+If the binary was skipped (for example on a restricted network):
+
+```bash
+npx cypress install
 npx cypress verify
-npx tsc --noEmit
-```
-
-> Use `npm ci` (clean install) instead of `npm install` in CI/CD for faster, more reliable, and reproducible dependency installation.
-
----
-
-## Step 8: First Test Run
-
-Open the Cypress Test Runner:
-
-```bash
-npm run cypress:open
-```
-
-Or run tests headlessly:
-
-```bash
-npm run cypress:run
 ```
 
 ---
 
-## Dependency Summary
-
-Here is the complete `package.json` for a fresh installation:
-
-```json
-{
-  "name": "autovd-cypress-typescript",
-  "version": "1.0.0",
-  "description": "Scalable Cypress TypeScript Test Framework",
-  "scripts": {
-    "cypress:open": "cypress open",
-    "cypress:run": "cypress run",
-    "cypress:run:chrome": "cypress run --browser chrome",
-    "lint": "eslint cypress/ --ext .ts",
-    "lint:fix": "eslint cypress/ --ext .ts --fix",
-    "format": "prettier --write cypress/",
-    "type-check": "tsc --noEmit"
-  },
-  "devDependencies": {
-    "cypress": "^13.0.0",
-    "typescript": "^5.0.0",
-    "@types/node": "^20.0.0",
-    "eslint": "^8.0.0",
-    "eslint-plugin-cypress": "^2.0.0",
-    "eslint-plugin-import": "^2.0.0",
-    "prettier": "^3.0.0",
-    "eslint-config-prettier": "^9.0.0",
-    "cypress-mochawesome-reporter": "^3.0.0",
-    "mochawesome": "^7.0.0",
-    "mochawesome-merge": "^4.0.0",
-    "mochawesome-report-generator": "^6.0.0"
-  }
-}
-```
-
-Install everything at once:
+## Verify the setup
 
 ```bash
-npm install --save-dev cypress typescript @types/node eslint eslint-plugin-cypress eslint-plugin-import prettier eslint-config-prettier cypress-mochawesome-reporter mochawesome mochawesome-merge mochawesome-report-generator
+npm run verify     # type-check + lint + format check
+npm run test:smoke # one tagged critical-path test
+```
+
+`npm run verify` must pass before you open the runner.
+
+---
+
+## Run tests
+
+```bash
+npm run test:open      # interactive runner
+npm test               # all specs, headless
+npm run test:smoke     # only @smoke-tagged tests
+npm run test:headed    # headless run with a visible browser
+```
+
+The suite targets `https://www.saucedemo.com` by default. Override it without editing code:
+
+```bash
+CYPRESS_BASE_URL=https://staging.example.com npm test
 ```
 
 ---
 
-## Verification Checklist
+## Dependencies
 
-- [ ] `node --version` returns 18+
-- [ ] `npm --version` returns 9+
-- [ ] `npx tsc --version` works
-- [ ] `npx cypress --version` works
+| Package | Why |
+|---|---|
+| `cypress` | Test runner |
+| `typescript` | Type safety |
+| `@types/node` | Node types for the Cypress config |
+| `@cypress/grep` | Tag-based test selection and spec pre-filtering |
+| `cypress-mochawesome-reporter` | HTML/JSON reports with screenshots |
+| `eslint`, `@eslint/js`, `typescript-eslint`, `eslint-plugin-cypress`, `eslint-config-prettier` | Linting |
+| `prettier` | Formatting |
+| `globals` | Node globals for the flat ESLint config |
+
+Install the same set on a fresh machine with:
+
+```bash
+npm ci
+```
+
+Do not install the old `mochawesome`, `mochawesome-merge` or `mochawesome-report-generator` packages directly; the reporter brings the compatible versions with it.
+
+---
+
+## First-run checklist
+
+- [ ] `node --version` returns 22
+- [ ] `npm ci` completes
 - [ ] `npx cypress verify` passes
-- [ ] `npm run cypress:open` launches the Test Runner
-- [ ] `npm run type-check` passes with no errors
+- [ ] `npm run verify` passes
+- [ ] `npm run test:smoke` passes
+- [ ] `npm run test:open` launches the runner
+- [ ] `reports/index.html` exists after a headless run
 
 ---
 
 ## Troubleshooting
 
-| Issue | Solution |
-|-------|----------|
-| `cypress: command not found` | Run `npx cypress install` to download the Cypress binary |
-| TypeScript compilation errors | Run `npx tsc --init` and check `tsconfig.json` |
-| ESLint errors on Cypress globals | Install `eslint-plugin-cypress` and add it to `.eslintrc` |
-| Permission errors on `npm install` | Use `nvm` or fix npm permissions; avoid `sudo npm install` |
+| Problem | Fix |
+|---|---|
+| `cypress: command not found` | Run `npx cypress install` |
+| Cypress binary download fails | Check proxy settings, then rerun `npx cypress install` |
+| ESLint cannot find the config | Use ESLint 10+ and keep `eslint.config.mjs` at the repo root |
+| Type errors on JSON imports | Keep `resolveJsonModule: true` in `tsconfig.json` |
+| Tests cannot open `/inventory.html` directly | SauceDemo 404s deep links; always navigate through the UI |
+| Chrome not found | Install Chrome or run with the default Electron browser |
+| Permission errors on install | Use `nvm`; do not run `sudo npm install` |

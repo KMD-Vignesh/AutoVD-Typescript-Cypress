@@ -1,161 +1,124 @@
-# 05 - Custom Cypress Commands
+# 05 - Custom Commands & Shared Login
 
-This document explains how to create, document, and use custom Cypress commands in the AutoVD framework.
-
----
-
-## Overview
-
-Custom commands extend Cypress's `cy` object with reusable actions. They reduce duplication and make tests more readable.
-
-All custom commands live in `cypress/support/commands.ts`.
+Custom commands are for behavior shared by many specs. Page objects are for page-level actions. Keep the boundary clear.
 
 ---
 
-## Creating Custom Commands
+## How commands are registered
 
-Edit `cypress/support/commands.ts` to add your commands:
+`cypress/support/e2e.ts` imports the command file once per spec:
 
 ```typescript
-// cypress/support/commands.ts
-import './login-command';
-import './api-command';
+import './commands';
+import 'cypress-mochawesome-reporter/register';
+import { register as registerCypressGrep } from '@cypress/grep';
 
-// Or define them directly in this file
-Cypress.Commands.add('login', (credentials: { email: string; password: string }) => {
-  cy.visit('/login');
-  cy.get('[data-testid="email-input"]').type(credentials.email);
-  cy.get('[data-testid="password-input"]').type(credentials.password);
-  cy.get('[data-testid="login-btn"]').click();
-  cy.url().should('include', '/dashboard');
-});
+registerCypressGrep();
+```
 
-Cypress.Commands.add('register', (user: { email: string; password: string; name: string }) => {
-  cy.visit('/register');
-  cy.get('[data-testid="name-input"]').type(user.name);
-  cy.get('[data-testid="email-input"]').type(user.email);
-  cy.get('[data-testid="password-input"]').type(user.password);
-  cy.get('[data-testid="register-btn"]').click();
-});
+`cypress/support/commands.ts`:
 
-Cypress.Commands.add('assertVisibleAndEnabled', { prevSubject: true }, (subject) => {
-  cy.wrap(subject).should('be.visible').and('not.be.disabled');
+```typescript
+import { LoginPage } from '../page-objects/saucedemo/LoginPage';
+
+Cypress.Commands.add('login', (user: { username: string; password: string }) => {
+  new LoginPage().visit().login(user);
+  cy.url().should('include', '/inventory.html');
 });
 ```
 
----
-
-## TypeScript Type Declarations
-
-Add type declarations in `cypress/support/types.d.ts` so TypeScript knows about custom commands:
+Types live in `cypress/support/types.d.ts`:
 
 ```typescript
-// cypress/support/types.d.ts
 /// <reference types="cypress" />
 
 declare namespace Cypress {
   interface Chainable {
-    /**
-     * Custom login command
-     * @param credentials - User credentials { email, password }
-     * @example cy.login({ email: 'user@test.com', password: 'secret123' })
-     */
-    login(credentials: { email: string; password: string }): Chainable<void>;
-
-    /**
-     * Custom registration command
-     * @param user - User registration data
-     * @example cy.register({ name: 'John', email: 'john@test.com', password: 'secret123' })
-     */
-    register(user: { name: string; email: string; password: string }): Chainable<void>;
-
-    /**
-     * Assert element is visible and enabled
-     * @example cy.get('[data-testid="btn"]').assertVisibleAndEnabled()
-     */
-    assertVisibleAndEnabled(): Chainable<void>;
+    login(user: { username: string; password: string }): Chainable<void>;
   }
 }
 ```
 
----
+Because `tsconfig.json` includes `cypress/**/*.ts`, the declaration is global and specs get autocomplete and type checking.
 
-## Organizing Commands into Separate Files
-
-For large projects, split commands into domain-specific files:
-
-```
-cypress/support/
-├── commands.ts           # Main entry point - imports all command modules
-├── login-command.ts      # Authentication-related commands
-├── api-command.ts        # API-related commands
-├── form-command.ts       # Form interaction commands
-└── assertion-command.ts  # Custom assertion commands
-```
-
-### Example: `cypress/support/commands.ts`
+Usage:
 
 ```typescript
-// Import all command modules
-import './login-command';
-import './api-command';
-import './form-command';
-import './assertion-command';
-```
+import * as users from '../../fixtures/saucedemo/users.json';
 
-### Example: `cypress/support/login-command.ts`
-
-```typescript
-Cypress.Commands.add('login', (credentials: { email: string; password: string }) => {
-  cy.session(credentials.email, () => {
-    cy.visit('/login');
-    cy.get('[data-testid="email-input"]').type(credentials.email);
-    cy.get('[data-testid="password-input"]').type(credentials.password);
-    cy.get('[data-testid="login-btn"]').click();
-  });
-});
-```
-
----
-
-## Using `cy.session()` for Login Caching
-
-Cypress 12+ provides `cy.session()` to cache login state across tests:
-
-```typescript
-Cypress.Commands.add('login', (credentials: { email: string; password: string }) => {
-  cy.session(credentials.email, () => {
-    cy.visit('/login');
-    cy.get('[data-testid="email-input"]').type(credentials.email);
-    cy.get('[data-testid="password-input"]').type(credentials.password);
-    cy.get('[data-testid="login-btn"]').click();
-    cy.url().should('include', '/dashboard');
-  }, {
-    validate: () => {
-      // Check if session is still valid
-      cy.getCookie('session_token').should('exist');
-    }
-  });
-});
-```
-
-Then in tests:
-
-```typescript
 beforeEach(() => {
-  cy.login({ email: 'user@test.com', password: 'secret123' });
+  cy.login(users.validUser);
 });
 ```
 
 ---
 
-## Custom Command Do's and Don'ts
+## Why the login is not using `cy.session()`
 
-| Do | Don't |
-|----|-------|
-| Add JSDoc with `@param` and `@example` | Write commands without documentation |
-| Add TypeScript declarations in `types.d.ts` | Use commands without type safety |
-| Use `cy.session()` for login caching | Log in before every single test |
-| Return `Chainable<void>` or `Chainable<Selector>` | Return raw values from commands |
-| Keep commands focused on one action | Create giant commands that do everything |
-| Chain commands when appropriate | Break chains unnecessarily |
+`cy.session()` is the standard way to cache authentication. It works when a restored session can open a protected URL directly.
+
+SauceDemo does not support that:
+
+- `https://www.saucedemo.com/inventory.html` returns **404** on a full page load.
+- Loading `/` with a restored cookie does **not** redirect to the inventory page.
+
+A cached session therefore cannot get the test back into the app. The command logs in through the UI instead. The same restriction is documented in `commands.ts` as a `shortcut:` comment.
+
+If this framework is pointed at a real application that supports deep links, replace the body with:
+
+```typescript
+Cypress.Commands.add('login', (user) => {
+  cy.session(user.username, () => {
+    new LoginPage().visit().login(user);
+    cy.url().should('include', '/inventory.html');
+  });
+
+  cy.visit('/inventory.html'); // only if the app allows deep links
+});
+```
+
+---
+
+## When to add a command
+
+Add a command when the same multi-step action appears in two or more specs:
+
+| Need | Where |
+|---|---|
+| A page action (click, type, assert) | Page object |
+| Login, logout, seed data, feature flags | Custom command |
+| One-off setup used by one spec | Keep it in that spec |
+| Pure helper (formatting, generating data) | Plain function in the spec or a module-level helper |
+
+Do not create a command that only wraps one `cy.get()`; the page object is the right place.
+
+---
+
+## Command checklist
+
+- [ ] Registered in `cypress/support/commands.ts`
+- [ ] Imported by `cypress/support/e2e.ts`
+- [ ] Declared in `cypress/support/types.d.ts`
+- [ ] Has a short doc comment with one usage example
+- [ ] Reuses page objects instead of duplicating selectors
+- [ ] Does not contain scenario assertions that belong in a spec
+
+---
+
+## Tagging tests
+
+Test selection uses `@cypress/grep`, not a custom command. Add tags directly to the test:
+
+```typescript
+it('should complete a full checkout flow with one product', { tags: '@smoke' }, () => {
+  // ...
+});
+```
+
+Run them with:
+
+```bash
+npm run test:smoke
+```
+
+Tags are also recognized on `describe` blocks and accept arrays for multiple tags. See `docs/06-configuration.md` for the `expose` settings.

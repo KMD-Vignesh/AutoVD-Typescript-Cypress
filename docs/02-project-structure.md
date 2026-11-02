@@ -1,199 +1,128 @@
 # 02 - Project Structure & Module Organization
 
-This document defines the recommended folder architecture for a scalable, maintainable Cypress TypeScript framework. The structure follows separation of concerns, grouping code by module/feature rather than by file type.
+The framework groups files by feature module, not by file type. A module owns its specs, page objects and fixtures under the same name.
 
 ---
 
-## Recommended Directory Layout
+## Directory layout
 
 ```
 AutoVD-Typescript-Cypress/
+├── .github/
+│   └── workflows/
+│       └── e2e.yml                  # Type-check, lint, run, upload artifacts
 ├── cypress/
-│   ├── e2e/                          # End-to-end test specifications
-│   │   ├── auth/                     # Module: Authentication
-│   │   │   ├── login.cy.ts           # Login tests
-│   │   │   ├── logout.cy.ts          # Logout tests
-│   │   │   └── registration.cy.ts    # Registration tests
-│   │   ├── dashboard/                # Module: Dashboard
-│   │   │   ├── dashboard.cy.ts
-│   │   │   └── widgets.cy.ts
-│   │   ├── users/                    # Module: User Management
-│   │   │   ├── user-profile.cy.ts
-│   │   │   └── user-settings.cy.ts
-│   │   ├── common/                   # Module: Common / Shared flows
-│   │   │   ├── navigation.cy.ts
-│   │   │   └── breadcrumbs.cy.ts
-│   │   └── smoke/                    # Smoke test suite
-│   │       └── smoke.cy.ts
-│   ├── fixtures/                     # Static test data (JSON)
-│   │   ├── auth/
-│   │   │   └── users.json
-│   │   ├── dashboard/
-│   │   │   └── widgets.json
-│   │   └── common/
-│   │       └── navigation.json
-│   ├── page-objects/                 # Page Object Model classes
-│   │   ├── auth/
-│   │   │   ├── LoginPage.po.ts
-│   │   │   └── RegisterPage.po.ts
-│   │   ├── dashboard/
-│   │   │   └── DashboardPage.po.ts
-│   │   ├── common/
-│   │   │   ├── Navbar.po.ts
-│   │   │   └── Footer.po.ts
-│   │   └── base/
-│   │       └── BasePage.po.ts        # Base class with shared methods
+│   ├── e2e/
+│   │   └── saucedemo/               # One folder per feature module
+│   │       ├── login.cy.ts
+│   │       ├── products.cy.ts
+│   │       └── checkout.cy.ts
+│   ├── fixtures/
+│   │   └── saucedemo/
+│   │       ├── users.json
+│   │       └── checkout-info.json
+│   ├── page-objects/
+│   │   ├── base/
+│   │   │   └── BasePage.ts          # Shared navigation only
+│   │   └── saucedemo/
+│   │       ├── LoginPage.ts
+│   │       ├── ProductsPage.ts
+│   │       ├── CartPage.ts
+│   │       └── CheckoutPage.ts
 │   ├── support/
-│   │   ├── e2e.ts                    # Global before/after hooks
-│   │   ├── commands.ts               # Custom Cypress commands
-│   │   └── types.d.ts                # TypeScript declarations
-│   ├── utils/                        # Reusable utility functions
-│   │   ├── api/
-│   │   │   └── request.ts            # API request helpers
-│   │   ├── constants.ts              # App-wide constants
-│   │   ├── data-generator.ts         # Random test data generators
-│   │   └── helpers.ts                # General helper functions
-│   └── downloads/                    # Downloaded files during tests
-├── docs/                             # Documentation (this folder)
-├── reports/                          # Test execution reports (gitignored)
-├── cypress.config.ts                 # Cypress configuration (TS)
-├── package.json                      # NPM manifest
-├── tsconfig.json                     # TypeScript configuration
-├── .eslintrc.js                      # ESLint configuration
-├── .prettierrc                       # Prettier configuration
-└── .gitignore                        # Git ignore rules
+│   │   ├── commands.ts              # cy.login and future shared commands
+│   │   ├── e2e.ts                   # Reporter and grep registration
+│   │   └── types.d.ts               # Custom command type declarations
+│   ├── downloads/                   # Gitignored
+│   ├── screenshots/                 # Gitignored
+│   └── videos/                      # Gitignored
+├── docs/
+├── reports/                         # Gitignored
+├── .editorconfig
+├── .nvmrc
+├── .prettierignore
+├── cypress.config.ts
+├── eslint.config.mjs
+├── package.json
+├── tsconfig.json
+└── README.md
 ```
 
 ---
 
-## Module-Based Organization
+## Module rules
 
-Each module (e.g., auth, dashboard, users) is a self-contained feature area containing:
+A module is self-contained:
 
-1. **Test specs** (`cypress/e2e/<module>/`) — Test cases for that module
-2. **Page objects** (`cypress/page-objects/<module>/`) — UI mappings and actions
-3. **Fixtures** (`cypress/fixtures/<module>/`) — Test data specific to that module
+1. **Specs** — `cypress/e2e/<module>/*.cy.ts`
+2. **Page objects** — `cypress/page-objects/<module>/*.ts`
+3. **Fixtures** — `cypress/fixtures/<module>/*.json`
 
-### Example: auth Module
+If a new area is not related to any existing module, create a new module with the same three folders. Do not mix selectors for one area into another module's page object.
+
+Example:
 
 ```
 cypress/
-├── e2e/auth/
-│   ├── login.cy.ts
-│   ├── logout.cy.ts
-│   └── registration.cy.ts
-├── page-objects/auth/
-│   ├── LoginPage.po.ts
-│   ├── RegisterPage.po.ts
-│   └── LogoutPage.po.ts
-└── fixtures/auth/
-    └── users.json
+├── e2e/checkout/
+├── fixtures/checkout/
+└── page-objects/checkout/
 ```
 
----
-
-## File Naming Conventions
-
-| File Type | Pattern | Example |
-|-----------|---------|---------|
-| Test spec | `<feature>.cy.ts` | `login.cy.ts` |
-| Page object | `<PageName>.po.ts` | `LoginPage.po.ts` |
-| Base page | `BasePage.po.ts` | `BasePage.po.ts` |
-| Custom command file | `commands.ts` | `commands.ts` |
-| Fixture data | `<data-set>.json` | `users.json` |
-| Utility | `<purpose>.ts` | `data-generator.ts` |
-| Constant | `constants.ts` | `constants.ts` |
+The current reference module is `saucedemo` because every SauceDemo area shares one demo application.
 
 ---
 
-## Separation of Concerns
+## Naming conventions
 
-### 1. Test Specs (`cypress/e2e/`)
-- **Responsibility**: Define test scenarios, assertions, and test flow
-- **Should NOT contain**: CSS selectors, DOM queries, page-specific logic
-- **Should use**: Page objects, custom commands, fixtures
+| File type | Pattern | Example |
+|---|---|---|
+| Spec | `<feature>.cy.ts` | `checkout.cy.ts` |
+| Page object | `<PageName>.ts` | `CheckoutPage.ts` |
+| Base page | `BasePage.ts` | `BasePage.ts` |
+| Fixture | `<data-set>.json` | `users.json` |
+| Shared command | `commands.ts` | `commands.ts` |
+| Type declarations | `types.d.ts` | `types.d.ts` |
+| Config | `<tool>.config.*` | `cypress.config.ts` |
 
-### 2. Page Objects (`cypress/page-objects/`)
-- **Responsibility**: Encapsulate UI selectors and page interactions
-- **Should NOT contain**: Test assertions, business logic unrelated to UI
-- **Should contain**: Selectors, click/type/navigate methods, verification helpers
-
-### 3. Custom Commands (`cypress/support/commands.ts`)
-- **Responsibility**: Reusable Cypress commands across tests
-- **Examples**: `login()`, `createUser()`, `assertElementVisible()`
-
-### 4. Fixtures (`cypress/fixtures/`)
-- **Responsibility**: Static test data (JSON)
-- **Examples**: User credentials, product details, API mock responses
-
-### 5. Utilities (`cypress/utils/`)
-- **Responsibility**: Non-UI helper functions
-- **Examples**: API request wrappers, random data generators, date formatters
+Page object files use the class name directly. The folder already says `page-objects`, so a `.po.ts` suffix is redundant.
 
 ---
 
-## Import Path Strategy
+## Responsibility boundaries
 
-Use relative imports within the same module, and relative imports across modules:
+### Specs
 
-```typescript
-// Same module (e.g., auth test importing auth page object)
-import { LoginPage } from '../../page-objects/auth/LoginPage';
+- **Own:** scenarios, assertions, test data selection, tags.
+- **Do not own:** CSS selectors, repeated page interactions.
+- **Use:** page objects, fixtures, `cy.login`.
 
-// Cross-module (e.g., dashboard test importing navbar page object)
-import { Navbar } from '../../page-objects/common/Navbar';
+### Page objects
 
-// Utils
-import { generateRandomUser } from '../../utils/data-generator';
+- **Own:** selectors, page actions, page-level assertions.
+- **Do not own:** test scenarios or cross-page business flows.
+- **Return:** `this` from actions for chaining; return Cypress chains only from getters.
 
-// Fixtures
-import * as users from '../../fixtures/auth/users.json';
-```
+### Fixtures
 
-> Avoid deep relative paths like `../../../` by keeping modules shallow. If paths become too deep, consider adding path aliases in `tsconfig.json`.
+- **Own:** static, reusable data.
+- **Do not own:** secrets, environment URLs, generated values.
 
----
+### Support
 
-## Scalability Guidelines
-
-1. **One module per folder** — Don't mix unrelated features in the same folder
-2. **One page object per page/component** — Don't create a giant `AllPages.po.ts`
-3. **One test spec per feature** — `login.cy.ts` for login, not `everything.cy.ts`
-4. **Shared components in `common/`** — Header, footer, navigation, modals
-5. **Base page for shared UI methods** — `BasePage.po.ts` for `visit()`, `waitForLoad()`, etc.
-6. **Keep test specs lean** — Move complex logic to page objects or utils
+- **Own:** global setup, custom commands and their types.
+- **Keep small:** no test logic, no page selectors.
 
 ---
 
-## .gitignore Recommendations
+## When to add a new file
 
-```gitignore
-# Dependencies
-node_modules/
+| Need | Add |
+|---|---|
+| A new user flow | `cypress/e2e/<module>/<flow>.cy.ts` |
+| A new screen or reusable component | `cypress/page-objects/<module>/<Name>Page.ts` |
+| Static test data | `cypress/fixtures/<module>/<set>.json` |
+| Repeated multi-page action | A command in `cypress/support/commands.ts` + its type |
+| One-off helper used by one spec | Keep it in that spec |
 
-# Cypress
-cypress/downloads/
-cypress/screenshots/
-cypress/videos/
-cypress/results/
-
-# Reports
-reports/
-
-# TypeScript
-*.tsbuildinfo
-
-# IDE
-.idea/
-.vscode/
-*.swp
-*.swo
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Logs
-*.log
-npm-debug.log*
-```
+Avoid creating shared utilities until two specs need them.

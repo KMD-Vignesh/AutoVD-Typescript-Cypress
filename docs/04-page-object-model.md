@@ -1,340 +1,192 @@
-# 04 - Page Object Model (POM) Guide
+# 04 - Page Object Model (POM)
 
-This document explains how to implement and maintain Page Object Models in the AutoVD Cypress TypeScript framework.
-
----
-
-## What is Page Object Model?
-
-Page Object Model is a design pattern that creates an object repository for UI elements. Each web page (or component) gets a class that contains:
+Page objects keep selectors and page actions out of specs. Each page or reusable component gets one class under `cypress/page-objects/`.
 
 ---
 
-## Base Page Class
+## Base page
 
-Create a `BasePage` class with common methods shared across all pages:
+`BasePage` contains only behavior shared by every page. In this framework that is navigation:
 
 ```typescript
-// cypress/page-objects/base/BasePage.po.ts
+// cypress/page-objects/base/BasePage.ts
 export class BasePage {
-  /**
-   * Visit a URL path
-   */
-  visit(path: string = '') {
+  visit(path = '') {
     cy.visit(path);
     return this;
   }
+}
+```
 
-  /**
-   * Get an element by data-testid
-   */
-  getByTestId(testId: string) {
-    return cy.get(`[data-testid="${testId}"]`);
-  }
-
-  /**
-   * Wait for an element to be visible
-   */
-  waitForVisible(testId: string, timeout = 10000) {
-    return cy.get(`[data-testid="${testId}"]`, { timeout }).should('be.visible');
-  }
-
+Do not add generic helpers that no page uses. A small base class is easier to maintain than a utility drawer.
 
 ---
 
-## Example: Login Page Object
+## Example: Login page
 
 ```typescript
-// cypress/page-objects/auth/LoginPage.po.ts
+// cypress/page-objects/saucedemo/LoginPage.ts
 import { BasePage } from '../base/BasePage';
 
-interface LoginCredentials {
-  email: string;
+export interface LoginCredentials {
+  username: string;
   password: string;
 }
 
 export class LoginPage extends BasePage {
   private readonly selectors = {
-    emailInput: '[data-testid="login-email-input"]',
-    passwordInput: '[data-testid="login-password-input"]',
-    loginButton: '[data-testid="login-submit-btn"]',
-    errorMessage: '[data-testid="login-error-msg"]',
-    rememberMe: '[data-testid="login-remember-me"]',
-    forgotPasswordLink: '[data-testid="login-forgot-password"]',
+    usernameInput: '[data-test="username"]',
+    passwordInput: '[data-test="password"]',
+    loginButton: '[data-test="login-button"]',
+    errorMessage: '[data-test="error"]',
+    loginLogo: '.login_logo',
   };
 
-  /**
-   * Navigate to the login page
-   */
   visit() {
-    cy.visit('/login');
+    cy.visit('/');
     return this;
   }
 
-  /**
-   * Enter email address
-   */
-  enterEmail(email: string) {
-    cy.get(this.selectors.emailInput).clear().type(email);
+  enterUsername(username: string) {
+    cy.get(this.selectors.usernameInput).clear();
+    cy.get(this.selectors.usernameInput).type(username);
     return this;
   }
 
-  /**
-   * Enter password
-   */
   enterPassword(password: string) {
-    cy.get(this.selectors.passwordInput).clear().type(password);
+    cy.get(this.selectors.passwordInput).clear();
+    cy.get(this.selectors.passwordInput).type(password);
     return this;
   }
 
-  /**
-   * Click the login/submit button
-   */
   clickLogin() {
     cy.get(this.selectors.loginButton).click();
     return this;
   }
 
-  /**
-   * Toggle remember me checkbox
-   */
-  toggleRememberMe(shouldCheck: boolean = true) {
-    cy.get(this.selectors.rememberMe).check(shouldCheck);
-    return this;
-  }
-
-  /**
-   * Click forgot password link
-   */
-  clickForgotPassword() {
-
----
-
-## Example: Dashboard Page Object
-
-```typescript
-// cypress/page-objects/dashboard/DashboardPage.po.ts
-import { BasePage } from '../base/BasePage';
-
-export class DashboardPage extends BasePage {
-  private readonly selectors = {
-    welcomeMessage: '[data-testid="dashboard-welcome"]',
-    userProfileDropdown: '[data-testid="dashboard-user-profile"]',
-    logoutButton: '[data-testid="dashboard-logout-btn"]',
-    sidebarNav: '[data-testid="dashboard-sidebar"]',
-    createWidgetButton: '[data-testid="dashboard-create-widget"]',
-    widgetList: '[data-testid="dashboard-widget-list"]',
-  };
-
-  visit() {
-    cy.visit('/dashboard');
-    return this;
-  }
-
-  getWelcomeMessage() {
-    return cy.get(this.selectors.welcomeMessage);
-  }
-
-  assertWelcomeMessageContains(name: string) {
-    cy.get(this.selectors.welcomeMessage).should('contain.text', name);
-    return this;
-  }
-
-  openUserProfile() {
-    cy.get(this.selectors.userProfileDropdown).click();
-    return this;
-  }
-
-  clickLogout() {
-    cy.get(this.selectors.logoutButton).click();
-    return this;
-  }
-
-  assertSidebarVisible() {
-    cy.get(this.selectors.sidebarNav).should('be.visible');
-    return this;
-  }
-
-  clickCreateWidget() {
-    cy.get(this.selectors.createWidgetButton).click();
-    return this;
-  }
-
-  assertWidgetCount(expectedCount: number) {
-    cy.get(this.selectors.widgetList).should('have.length', expectedCount);
-    return this;
-  }
-}
-```
-
----
-
-## Using Page Objects in Tests
-
-```typescript
-// cypress/e2e/auth/login.cy.ts
-import { LoginPage } from '../../page-objects/auth/LoginPage';
-import * as users from '../../fixtures/auth/users.json';
-
-describe('Login Module', () => {
-  let loginPage: LoginPage;
-
-  beforeEach(() => {
-    loginPage = new LoginPage();
-  });
-
-  describe('Valid Login', () => {
-    it('should successfully log in with valid credentials', () => {
-      loginPage.visit();
-      loginPage.login(users.validUser);
-      
-      // Assertions
-      cy.url().should('include', '/dashboard');
-    });
-  });
-
-  describe('Invalid Login', () => {
-    it('should show error message with invalid credentials', () => {
-      loginPage.visit();
-      loginPage.login(users.invalidUser);
-      
-      loginPage.assertErrorMessageVisible();
-      loginPage.assertErrorMessageContains('Invalid credentials');
-    });
-  });
-});
-```
-
----
-
-## Chaining Pattern
-
-Page object methods should return `this` to enable method chaining:
-
-```typescript
-// ✅ Chainable
-loginPage
-  .visit()
-  .enterEmail('user@test.com')
-  .enterPassword('password123')
-  .clickLogin();
-
-// ✅ Also works for assertions
-dashboardPage
-  .visit()
-  .assertSidebarVisible()
-  .assertWelcomeMessageContains('John');
-```
-
----
-
-## Folder Structure for Page Objects
-
-```
-cypress/page-objects/
-├── base/
-│   └── BasePage.po.ts        # Base class with shared methods
-├── auth/
-│   ├── LoginPage.po.ts
-│   ├── RegisterPage.po.ts
-│   └── LogoutPage.po.ts
-├── dashboard/
-│   └── DashboardPage.po.ts
-├── users/
-│   ├── UserProfilePage.po.ts
-│   └── UserSettingsPage.po.ts
-└── common/
-    ├── Navbar.po.ts
-    ├── Footer.po.ts
-    └── Modal.po.ts
-```
-
----
-
-## Do's and Don'ts
-
-| Do | Don't |
-|----|-------|
-| Encapsulate selectors in page objects | Put selectors directly in test specs |
-| Return `this` from methods for chaining | Return `cy` chains from page methods |
-| Use descriptive method names (`enterEmail`, `clickSubmit`) | Use vague names (`type1`, `click2`) |
-| Keep page objects focused on one page/component | Create one giant `AllPages.po.ts` |
-| Extend `BasePage` for shared functionality | Duplicate common methods in every page |
-| Use private selectors, public methods | Expose selectors publicly |
-    cy.get(this.selectors.forgotPasswordLink).click();
-    return this;
-  }
-
-  /**
-   * Perform full login flow
-   */
   login(credentials: LoginCredentials) {
-    this.enterEmail(credentials.email)
+    this.enterUsername(credentials.username)
       .enterPassword(credentials.password)
       .clickLogin();
     return this;
   }
 
-  /**
-   * Get the error message element
-   */
   getErrorMessage() {
     return cy.get(this.selectors.errorMessage);
   }
 
-  /**
-   * Assert error message is visible
-   */
   assertErrorMessageVisible() {
     cy.get(this.selectors.errorMessage).should('be.visible');
     return this;
   }
-
-  /**
-   * Assert error message contains specific text
-   */
-  assertErrorMessageContains(text: string) {
-    cy.get(this.selectors.errorMessage).should('contain.text', text);
-    return this;
-  }
-}
-```
-  /**
-   * Wait for an element to not exist
-   */
-  waitForNotExist(testId: string, timeout = 10000) {
-    return cy.get(`[data-testid="${testId}"]`, { timeout }).should('not.exist');
-  }
-
-  /**
-   * Click an element by data-testid
-   */
-  clickByTestId(testId: string) {
-    return cy.get(`[data-testid="${testId}"]`).click();
-  }
-
-  /**
-   * Type into an input by data-testid
-   */
-  typeByTestId(testId: string, text: string) {
-    return cy.get(`[data-testid="${testId}"]`).type(text);
-  }
-
-  /**
-   * Assert element contains text
-   */
-  assertContainsText(testId: string, text: string) {
-    return cy.get(`[data-testid="${testId}"]`).should('contain.text', text);
-  }
 }
 ```
 
-- **Selectors** (locators) for elements on the page
-- **Methods** that perform actions on those elements
-- Optional verification/assertion methods
+Rules used here:
 
-Benefits:
-- ✅ UI changes are isolated to one file
-- ✅ Test code is readable and maintainable
-- ✅ Reusable across multiple test specs
-- ✅ Type-safe with TypeScript interfaces
+- Selectors are `private readonly` and grouped in one object.
+- Actions return `this` so callers can chain.
+- Getters return Cypress chains for assertions.
+- Assertions that are page-specific live on the page object; scenario assertions stay in specs.
+
+---
+
+## Using page objects in specs
+
+```typescript
+// cypress/e2e/saucedemo/login.cy.ts
+import { LoginPage } from '../../page-objects/saucedemo/LoginPage';
+import * as users from '../../fixtures/saucedemo/users.json';
+
+describe('SauceDemo - Login Module', () => {
+  const loginPage = new LoginPage();
+
+  it('should show an error for invalid credentials', () => {
+    loginPage.visit();
+    loginPage.login(users.invalidUser);
+    loginPage.assertErrorMessageVisible();
+    loginPage
+      .getErrorMessage()
+      .should('contain.text', 'Username and password do not match');
+  });
+});
+```
+
+Specs that start from an authenticated session use the shared command:
+
+```typescript
+beforeEach(() => {
+  cy.login(users.validUser);
+});
+```
+
+A codebase should not mix both login styles in the same spec. Login specs exercise the UI; all other specs use `cy.login`.
+
+---
+
+## Chaining
+
+Actions return `this`:
+
+```typescript
+loginPage
+  .visit()
+  .enterUsername('standard_user')
+  .enterPassword('secret_sauce')
+  .clickLogin();
+```
+
+Getters return Cypress chains:
+
+```typescript
+productsPage.getProductNames().should('have.length.greaterThan', 0);
+```
+
+Do not return `cy` from an action and then try to chain page-object methods on it. Pick one style per method.
+
+---
+
+## Folder structure
+
+```
+cypress/page-objects/
+├── base/
+│   └── BasePage.ts
+└── saucedemo/
+    ├── LoginPage.ts
+    ├── ProductsPage.ts
+    ├── CartPage.ts
+    └── CheckoutPage.ts
+```
+
+For a new module:
+
+```
+cypress/page-objects/<module>/
+└── <PageName>.ts
+```
+
+Use the class name as the file name. The folder already communicates that these are page objects.
+
+---
+
+## Adding a page object
+
+1. Create `<Name>Page.ts` under the module.
+2. Extend `BasePage` if the page needs navigation.
+3. Add a `private readonly selectors` object.
+4. Add actions returning `this` and getters returning Cypress chains.
+5. Use it from a spec; do not put selectors back in the spec.
+
+---
+
+## Do and don't
+
+| Do | Don't |
+|---|---|
+| Keep selectors private and grouped | Export selectors to specs |
+| Return `this` from actions | Return raw `cy` chains from actions |
+| Keep one class per page/component | Build a `CommonPage` with everything |
+| Name methods after user intent (`addProductToCartByName`) | Name them after implementation (`clickThirdButton`) |
+| Put page-level assertions on the page object | Put business scenarios in the page object |
+| Keep `BasePage` small | Add unused "just in case" helpers |

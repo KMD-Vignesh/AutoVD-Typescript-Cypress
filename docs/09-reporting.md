@@ -1,29 +1,12 @@
 # 09 - Test Reporting
 
-This document covers test reporting options for the AutoVD Cypress framework.
+The framework uses `cypress-mochawesome-reporter`. Reports are generated automatically on every run; no merge step is required.
 
 ---
 
-## Built-in Cypress Reporter
+## How it is wired
 
-Cypress includes a default mocha reporter. For rich HTML reports, use `cypress-mochawesome-reporter`.
-
----
-
-
----
-
-## Option 1: Mochawesome HTML Reporter
-
-### Installation
-
-```bash
-npm install --save-dev cypress-mochawesome-reporter mochawesome mochawesome-merge mochawesome-report-generator
-```
-
-### Configuration
-
-Update `cypress.config.ts`:
+`cypress.config.ts`:
 
 ```typescript
 import { defineConfig } from 'cypress';
@@ -38,140 +21,99 @@ export default defineConfig({
     reporter: 'cypress-mochawesome-reporter',
     reporterOptions: {
       reportDir: 'reports',
-      overwrite: false,
-      html: true,
-      json: true,
+      charts: true,
+      reportPageTitle: 'AutoVD Cypress Report',
+      embeddedScreenshots: true,
+      inlineAssets: true,
+      saveAllAttempts: false,
     },
   },
 });
 ```
 
-Update `cypress/support/e2e.ts`:
+`cypress/support/e2e.ts`:
 
 ```typescript
 import 'cypress-mochawesome-reporter/register';
-
-// Your existing setup
-beforeEach(() => {
-  Cypress.mochawesomeReporter.context(Cypress.spec.name);
-});
 ```
 
-### Generate Report
-
-After running tests:
-
-```bash
-npx mochawesome-merge --reportDir reports > reports/mochawesome.json
-npx marge --reportDir reports --reportFilename report.html --inline
-```
-
-### npm Script
-
-Add to `package.json`:
-
-```json
-{
-  "scripts": {
-    "cypress:run:report": "cypress run --reporter cypress-mochawesome-reporter",
-    "report:merge": "mochawesome-merge --reportDir reports > reports/mochawesome.json && marge --reportDir reports --reportFilename report.html --inline"
-  }
-}
-```
+The plugin and the support import are both required. Removing either one produces JSON without the HTML report.
 
 ---
 
-## Option 2: Allure Reporter (Alternative)
+## Output
 
-### Installation
+After `npm test`:
+
+![Mochawesome report](assets/report.png)
+
+| Path | Content |
+|---|---|
+| `reports/index.html` | Self-contained HTML report |
+| `reports/.jsons/*.json` | Raw Mochawesome JSON per spec |
+| `reports/videos/` | Copies of run videos |
+| `cypress/screenshots/` | Failure screenshots (linked in the report) |
+
+Open the report locally:
 
 ```bash
-npm install --save-dev allure-cypress allure-commandline
+open reports/index.html
 ```
 
-### Configuration
+The report includes:
 
-Update `cypress.config.ts`:
+- Pass/fail counts and duration per spec
+- Failure messages and stack traces
+- Embedded screenshots for failures
+- Charts for pass rate and duration
+
+---
+
+## Screenshots and videos
 
 ```typescript
-import { defineConfig } from 'cypress';
-import { initPlugin } from 'allure-cypress';
-
-export default defineConfig({
-  e2e: {
-    setupNodeEvents(on, config) {
-      initPlugin(on, config);
-      return config;
-    },
-  },
-});
+video: true,
+videoCompression: 32,
+screenshotOnRunFailure: true,
+screenshotsFolder: 'cypress/screenshots',
+videosFolder: 'cypress/videos',
 ```
 
-### Generate Report
+Cypress takes the failure screenshot automatically. Do not add a second screenshot call in `afterEach` or `Cypress.on('fail')`; that creates duplicates and can interfere with the original error.
 
-```bash
-npx allure generate allure-results --clean
-npx allure open
-```
+`embeddedScreenshots: true` requires `inlineAssets: true` for a portable single-file report.
 
 ---
 
-## Option 3: JUnit Reporter (CI Integration)
+## Retries and attempts
 
-For CI systems that consume JUnit XML:
+`retries.runMode: 1` retries a failing test once. With:
+
+```typescript
+saveAllAttempts: false,
+```
+
+the report shows the final attempt. Set it to `true` only while diagnosing a flaky test; otherwise the report doubles in size and hides the real failure.
+
+---
+
+## Optional: JUnit XML
+
+Some CI dashboards consume JUnit XML. Install the reporter and run:
 
 ```bash
 npm install --save-dev mocha-junit-reporter
+npx cypress run --reporter mocha-junit-reporter \
+  --reporter-options mochaFile=reports/junit/results-[hash].xml
 ```
 
-Update `package.json`:
-
-```json
-{
-  "scripts": {
-    "cypress:run:junit": "cypress run --reporter mocha-junit-reporter --reporter-options mochaFile=reports/junit/results-[hash].xml"
-  }
-}
-```
+Keep Mochawesome as the default. Do not configure two reporters at once; Cypress accepts one per run.
 
 ---
 
-## Reporter Comparison
+## Retention and git hygiene
 
-| Reporter | Format | Best For |
-|----------|--------|----------|
-| Mochawesome | HTML + JSON | Rich visual reports, stakeholders |
-| Allure | HTML | Detailed analytics, trends, history |
-| JUnit | XML | CI/CD integration (Jenkins, GitLab) |
-| Cypress Default | Console | Local development, quick feedback |
-
----
-
-## Screenshot & Video Artifacts
-
-Cypress automatically captures:
-- **Screenshots**: On test failure (configurable)
-- **Videos**: Of entire test runs (configurable)
-
-Configure in `cypress.config.ts`:
-
-```typescript
-export default defineConfig({
-  e2e: {
-    video: true,
-    videoCompression: 32,
-    screenshotOnRunFailure: true,
-    screenshotsFolder: 'cypress/screenshots',
-    videosFolder: 'cypress/videos',
-  },
-});
-```
-
----
-
-## Report Retention
-
-Add to `.gitignore`:
+Generated output is ignored:
 
 ```gitignore
 reports/
@@ -179,11 +121,24 @@ cypress/screenshots/
 cypress/videos/
 ```
 
-Upload reports as CI/CD artifacts instead of committing them to version control.
-## Mochawesome Setup
+Upload these folders as CI artifacts (see `docs/08-ci-cd-integration.md`). Do not commit them.
 
-Install the reporter:
+To keep a run small, disable video locally:
 
 ```bash
-npm install --save-dev cypress-mochawesome-reporter mochawesome mochawesome-merge mochawesome-report-generator
+npx cypress run --config video=false
 ```
+
+Leave video enabled in CI so a failed run has evidence.
+
+---
+
+## Troubleshooting
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| Only JSON, no HTML | `initPlugin` missing | Add it to `setupNodeEvents` |
+| Report is empty | Reporter support import missing | Import `cypress-mochawesome-reporter/register` in `support/e2e.ts` |
+| Screenshots not embedded | `inlineAssets` false | Set `inlineAssets: true` |
+| Report grows every run | `overwrite`/attempts config | Keep one report directory and `saveAllAttempts: false` |
+| Wrong report location | `reportDir` changed | Update CI artifact path to match |
